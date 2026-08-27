@@ -159,10 +159,88 @@ function detectByBytes(
 }
 
 function detectOoxml(data: Uint8Array): DocumentFormat | undefined {
+  // Entry names from the central directory are the authoritative signal;
+  // scanning the whole buffer misreads compressed part data, where a random
+  // "xl/" or "word/" byte run is near-certain in a large media-heavy file.
+  const entryNames = readZipEntryNames(data);
+  if (entryNames) return ooxmlFormatFromEntryNames(entryNames);
+  // No readable central directory (typically a truncated prefix passed to
+  // sniffFormat): keep the legacy substring scan as a best-effort fallback.
   if (includesAscii(data, "word/")) return "docx";
   if (includesAscii(data, "xl/")) return "xlsx";
   if (includesAscii(data, "ppt/")) return "pptx";
   return undefined;
+}
+
+function ooxmlFormatFromEntryNames(
+  entryNames: readonly string[],
+): DocumentFormat | undefined {
+  for (const name of entryNames) {
+    if (name === "word/document.xml") return "docx";
+    if (name === "xl/workbook.xml") return "xlsx";
+    if (name === "ppt/presentation.xml") return "pptx";
+  }
+  if (entryNames.some((name) => name.startsWith("word/"))) return "docx";
+  if (entryNames.some((name) => name.startsWith("xl/"))) return "xlsx";
+  if (entryNames.some((name) => name.startsWith("ppt/"))) return "pptx";
+  return undefined;
+}
+
+const ZIP_EOCD_SIGNATURE = 0x06054b50;
+const ZIP_CENTRAL_HEADER_SIGNATURE = 0x02014b50;
+const ZIP_EOCD_MIN_BYTES = 22;
+// The end-of-central-directory record sits at most a 16-bit comment before
+// the end of the archive.
+const ZIP_EOCD_MAX_SCAN_BYTES = ZIP_EOCD_MIN_BYTES + 0xffff;
+const ZIP_CENTRAL_HEADER_MIN_BYTES = 46;
+
+/**
+ * Reads the archive's entry names from the central directory, or returns
+ * undefined when the directory cannot be read consistently (truncated input,
+ * zip64 markers, or corrupted records). Parsing is bounded by the record
+ * count and validated against the buffer on every step.
+ */
+function readZipEntryNames(data: Uint8Array): readonly string[] | undefined {
+  if (data.byteLength < ZIP_EOCD_MIN_BYTES) return undefined;
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const stop = Math.max(0, view.byteLength - ZIP_EOCD_MAX_SCAN_BYTES);
+  let eocdOffset = -1;
+  for (
+    let offset = view.byteLength - ZIP_EOCD_MIN_BYTES;
+    offset >= stop;
+    offset -= 1
+  ) {
+    if (view.getUint32(offset, true) === ZIP_EOCD_SIGNATURE) {
+      eocdOffset = offset;
+      break;
+    }
+  }
+  if (eocdOffset < 0) return undefined;
+
+  const entryCount = view.getUint16(eocdOffset + 10, true);
+  let offset = view.getUint32(eocdOffset + 16, true);
+  // A zip64 archive stores 0xffffffff here; treat it as unreadable rather
+  // than guessing.
+  if (offset === 0xffffffff) return undefined;
+
+  const decoder = new TextDecoder();
+  const names: string[] = [];
+  for (let index = 0; index < entryCount; index += 1) {
+    if (offset + ZIP_CENTRAL_HEADER_MIN_BYTES > data.byteLength)
+      return undefined;
+    if (view.getUint32(offset, true) !== ZIP_CENTRAL_HEADER_SIGNATURE)
+      return undefined;
+    const nameLength = view.getUint16(offset + 28, true);
+    const extraLength = view.getUint16(offset + 30, true);
+    const commentLength = view.getUint16(offset + 32, true);
+    const nameStart = offset + ZIP_CENTRAL_HEADER_MIN_BYTES;
+    if (nameStart + nameLength > data.byteLength) return undefined;
+    names.push(
+      decoder.decode(data.subarray(nameStart, nameStart + nameLength)),
+    );
+    offset = nameStart + nameLength + extraLength + commentLength;
+  }
+  return names;
 }
 
 function detectOle(data: Uint8Array): DocumentFormat | undefined {
