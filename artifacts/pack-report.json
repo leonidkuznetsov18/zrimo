@@ -3,13 +3,13 @@
   "releaseCandidate": true,
   "quarantineState": "ready",
   "name": "@zrimo/viewer",
-  "version": "0.1.1",
-  "filename": "zrimo-viewer-0.1.1.tgz",
-  "size": 14250945,
-  "unpackedSize": 17966231,
-  "shasum": "1f6a8d36d4fcc4dcbc070b5f05b3b06754d52b29",
-  "integrity": "sha512-JHHKH/eh3Pm7ViSBBATqKdAQ0BtGXktL6FeTa7WAeerSKUhhiksFLodCGdNNcrYJZhPzat+j4pXWvITe1pC3SA==",
-  "sha256": "6e2837b67db119adc63fff11f2b8deb565d25038f83263ffd1c8b6a2c24a29a9",
+  "version": "0.1.2",
+  "filename": "zrimo-viewer-0.1.2.tgz",
+  "size": 14256809,
+  "unpackedSize": 17986159,
+  "shasum": "49e6d12801cfc652e39875fb2503059f9af45322",
+  "integrity": "sha512-4g5LbaCD27hc60HSCtBflEtEudW8QoGxEkkOhUInscVt9EovypeiZIF+Lv6BvBUUZceLNf00o5Cu3u2TiGewpA==",
+  "sha256": "f1df67daf1647e0414f0c0d7c2c65b03816ad65cd0586d510bca4a3ddcb4c2b4",
   "fileCount": 308,
   "files": [
     {
@@ -1144,8 +1144,8 @@
     },
     {
       "path": "dist/assets/pdfjs/wasm/qcms_bg.wasm",
-      "size": 88837,
-      "sha256": "bfdaeb649178748e54bcdaa819bcd5c5c5a4278c8eaaf5feb5a26071e1c25bfc"
+      "size": 96589,
+      "sha256": "663d86126d5f5fcb1c61490f94353e2a8375660b8c5498ab3ebab5a34b08800e"
     },
     {
       "path": "dist/assets/pdfjs/wasm/quickjs-eval.js",
@@ -1194,8 +1194,8 @@
     },
     {
       "path": "dist/detect.js",
-      "size": 6556,
-      "sha256": "df1e75e9381e80a7239a89e5a5060170f57dc32e75332c3e5e08de2ccc6bf272"
+      "size": 11176,
+      "sha256": "10ef76ce3d5e45ffe54770fa349bf52236204df7dadd237f2b9c5276ff50ea07"
     },
     {
       "path": "dist/errors.d.ts",
@@ -1544,20 +1544,20 @@
     },
     {
       "path": "dist/workers/pdf.worker.min.mjs",
-      "size": 1304896,
-      "sha256": "30237a42aa8bde8d87770bc5b55848d792953d6f1befe5958dc61314b3a67d51"
+      "size": 1312452,
+      "sha256": "bc0d1b88ea0b66196b1d36a58ac243c6d92adfe725624e2a9fdd381bdf8ef434"
     },
     {
       "path": "package.json",
       "size": 1693,
-      "sha256": "6433d58a4a72b3bc19caae46d07901a80206db8c3ab2f735099049828a4ecfc6"
+      "sha256": "002422134eb7570a30dfd0d473b437bc564226689e410323f1427532e1dcbdda"
     }
   ],
   "requiredExportsPresent": true,
   "forbiddenFiles": [],
   "recursiveContentScan": {
     "entryCount": 308,
-    "expandedBytes": 36179607
+    "expandedBytes": 36219503
   },
   "privateSentinelExcluded": true,
   "consumers": [

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-18T17:50:59.547Z",
+  "generatedAt": "2026-08-28T09:39:01.029Z",
   "thresholds": {
     "targetBrotliBytes": 20971520,
     "releaseBlockBrotliBytes": 26214400,
@@ -9,9 +9,9 @@
   "status": "pass",
   "totals": {
     "base": {
-      "raw": 10335573,
-      "gzip": 4676223,
-      "brotli": 3819973
+      "raw": 10359062,
+      "gzip": 4683355,
+      "brotli": 3825525
     },
     "optionalFonts": {
       "raw": 10965514,
@@ -19,9 +19,9 @@
       "brotli": 10960714
     },
     "deliveredWithAllFonts": {
-      "raw": 21301087,
-      "gzip": 15640292,
-      "brotli": 14780687
+      "raw": 21324576,
+      "gzip": 15647424,
+      "brotli": 14786239
     }
   },
   "assets": [
@@ -119,9 +119,9 @@
     {
       "name": "code/detect.js",
       "group": "code",
-      "raw": 6556,
-      "gzip": 2029,
-      "brotli": 1797
+      "raw": 11176,
+      "gzip": 3274,
+      "brotli": 2851
     },
     {
       "name": "code/errors.js",
@@ -1701,9 +1701,9 @@
     {
       "name": "pdfjs/assets/pdfjs/wasm/qcms_bg.wasm",
       "group": "pdf",
-      "raw": 88837,
-      "gzip": 33176,
-      "brotli": 27045
+      "raw": 96589,
+      "gzip": 35810,
+      "brotli": 29090
     },
     {
       "name": "pdfjs/assets/pdfjs/wasm/quickjs-eval.js",
@@ -1722,16 +1722,16 @@
     {
       "name": "pdfjs/workers/pdf.worker.min.mjs",
       "group": "pdf",
-      "raw": 1304896,
-      "gzip": 387212,
-      "brotli": 319166
+      "raw": 1312452,
+      "gzip": 389679,
+      "brotli": 320973
     },
     {
       "name": "pdfjs/dependency/build/pdf.mjs",
       "group": "pdf",
-      "raw": 849976,
-      "gzip": 174099,
-      "brotli": 137542
+      "raw": 853537,
+      "gzip": 174885,
+      "brotli": 138188
     },
     {
       "name": "wasm/ooxml-docx",

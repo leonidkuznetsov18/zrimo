@@ -9,15 +9,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@zrimo/viewer": "0.1.1",
-    "@vitejs/plugin-react": "6.0.3",
-    "vite": "8.1.5",
+    "@zrimo/viewer": "0.1.2",
     "react": "19.2.7",
     "react-dom": "19.2.7"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "6.0.3",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "vite": "8.1.5"
   }
 }

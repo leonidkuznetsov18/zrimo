@@ -3,18 +3,18 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "zrimo-release-sbom",
-  "documentNamespace": "https://zrimo.dev/spdx/1784397060222",
+  "documentNamespace": "https://zrimo.dev/spdx/1787909941671",
   "creationInfo": {
-    "created": "2026-07-18T17:51:00.222Z",
+    "created": "2026-08-28T09:39:01.671Z",
     "creators": [
       "Tool: zrimo/scripts/generate-sbom.mjs"
     ]
   },
   "packages": [
     {
-      "SPDXID": "SPDXRef-npm--zrimo-viewer-0.1.1",
+      "SPDXID": "SPDXRef-npm--zrimo-viewer-0.1.2",
       "name": "@zrimo/viewer",
-      "versionInfo": "0.1.1",
+      "versionInfo": "0.1.2",
       "downloadLocation": "https://registry.npmjs.org/@zrimo/viewer",
       "licenseConcluded": "NOASSERTION",
       "licenseDeclared": "NOASSERTION",
@@ -30,9 +30,9 @@
       "supplier": "NOASSERTION"
     },
     {
-      "SPDXID": "SPDXRef-npm-pdfjs-dist-6.1.200",
+      "SPDXID": "SPDXRef-npm-pdfjs-dist-6.2.108",
       "name": "pdfjs-dist",
-      "versionInfo": "6.1.200",
+      "versionInfo": "6.2.108",
       "downloadLocation": "https://registry.npmjs.org/pdfjs-dist",
       "licenseConcluded": "NOASSERTION",
       "licenseDeclared": "NOASSERTION",

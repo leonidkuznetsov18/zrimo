@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.2 — 2026-08-28
+
+- Fixed OOXML subtype detection for media-heavy ZIP packages by reading
+  central-directory entry names instead of scanning compressed part contents.
+- Hardened ZIP end-of-central-directory parsing against signatures embedded in
+  ZIP comments, malformed central-directory bounds and unsupported ZIP64
+  markers; prefix sniffing remains available as a best-effort fallback.
+- Updated PDF.js and build-time tooling dependencies to address current npm
+  vulnerability advisories.
+
 ## 0.1.1 — 2026-07-18
 
 - Added visible search-result highlighting and active-match navigation for
