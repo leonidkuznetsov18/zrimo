@@ -188,6 +188,7 @@ function ooxmlFormatFromEntryNames(
 
 const ZIP_EOCD_SIGNATURE = 0x06054b50;
 const ZIP_CENTRAL_HEADER_SIGNATURE = 0x02014b50;
+const ZIP_CENTRAL_DIGITAL_SIGNATURE = 0x05054b50;
 const ZIP_EOCD_MIN_BYTES = 22;
 // The end-of-central-directory record sits at most a 16-bit comment before
 // the end of the archive.
@@ -210,10 +211,30 @@ function readZipEntryNames(data: Uint8Array): readonly string[] | undefined {
     offset >= stop;
     offset -= 1
   ) {
-    if (view.getUint32(offset, true) === ZIP_EOCD_SIGNATURE) {
-      eocdOffset = offset;
-      break;
-    }
+    if (view.getUint32(offset, true) !== ZIP_EOCD_SIGNATURE) continue;
+    const commentLength = view.getUint16(offset + 20, true);
+    if (offset + ZIP_EOCD_MIN_BYTES + commentLength !== view.byteLength)
+      continue;
+
+    const diskNumber = view.getUint16(offset + 4, true);
+    const centralDisk = view.getUint16(offset + 6, true);
+    const entriesOnDisk = view.getUint16(offset + 8, true);
+    const entryCount = view.getUint16(offset + 10, true);
+    const centralSize = view.getUint32(offset + 12, true);
+    const centralOffset = view.getUint32(offset + 16, true);
+    if (
+      diskNumber !== 0 ||
+      centralDisk !== 0 ||
+      entriesOnDisk !== entryCount ||
+      entryCount === 0xffff ||
+      centralSize === 0xffffffff ||
+      centralOffset === 0xffffffff ||
+      centralOffset + centralSize !== offset
+    )
+      continue;
+
+    eocdOffset = offset;
+    break;
   }
   if (eocdOffset < 0) return undefined;
 
@@ -226,21 +247,29 @@ function readZipEntryNames(data: Uint8Array): readonly string[] | undefined {
   const decoder = new TextDecoder();
   const names: string[] = [];
   for (let index = 0; index < entryCount; index += 1) {
-    if (offset + ZIP_CENTRAL_HEADER_MIN_BYTES > data.byteLength)
-      return undefined;
+    if (offset + ZIP_CENTRAL_HEADER_MIN_BYTES > eocdOffset) return undefined;
     if (view.getUint32(offset, true) !== ZIP_CENTRAL_HEADER_SIGNATURE)
       return undefined;
     const nameLength = view.getUint16(offset + 28, true);
     const extraLength = view.getUint16(offset + 30, true);
     const commentLength = view.getUint16(offset + 32, true);
     const nameStart = offset + ZIP_CENTRAL_HEADER_MIN_BYTES;
-    if (nameStart + nameLength > data.byteLength) return undefined;
+    const entryEnd = nameStart + nameLength + extraLength + commentLength;
+    if (entryEnd > eocdOffset) return undefined;
     names.push(
       decoder.decode(data.subarray(nameStart, nameStart + nameLength)),
     );
-    offset = nameStart + nameLength + extraLength + commentLength;
+    offset = entryEnd;
   }
-  return names;
+  if (offset === eocdOffset) return names;
+  // A central-directory digital signature may follow the file headers.
+  if (
+    offset + 6 <= eocdOffset &&
+    view.getUint32(offset, true) === ZIP_CENTRAL_DIGITAL_SIGNATURE &&
+    offset + 6 + view.getUint16(offset + 4, true) === eocdOffset
+  )
+    return names;
+  return undefined;
 }
 
 function detectOle(data: Uint8Array): DocumentFormat | undefined {

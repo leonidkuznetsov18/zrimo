@@ -5,6 +5,7 @@ import {
   defaultResourceLimits,
   detectFormat,
   enforceContainerLimits,
+  sniffFormat,
   ViewerError,
 } from "../src/index.js";
 
@@ -76,10 +77,17 @@ describe("format detection", () => {
     const prefix = new TextEncoder().encode(
       "PK truncated ppt/slides/slide1.xml",
     );
-    assert.equal(
-      detectFormat(prefix, { fileName: "deck.pptx" }).format,
-      "pptx",
+    assert.equal(sniffFormat(prefix), "pptx");
+  });
+
+  it("ignores EOCD signatures inside a ZIP comment", () => {
+    const falseEocd = new Uint8Array(22);
+    new DataView(falseEocd.buffer).setUint32(0, 0x06054b50, true);
+    const commentedDeck = storedZip(
+      [{ name: "ppt/presentation.xml" }],
+      falseEocd,
     );
+    assert.equal(detectFormat(commentedDeck).format, "pptx");
   });
 
   it("rejects encrypted OOXML-in-OLE containers before adapter routing", () => {
@@ -152,6 +160,7 @@ describe("pre-allocation resource limits", () => {
 /** Minimal stored (uncompressed) archive; CRCs stay zero — detection reads names only. */
 function storedZip(
   entries: readonly { name: string; data?: Uint8Array }[],
+  comment = new Uint8Array(0),
 ): Uint8Array {
   const encoder = new TextEncoder();
   const bytes: number[] = [];
@@ -208,7 +217,8 @@ function storedZip(
   u16(bytes, entries.length);
   u32(bytes, central.length);
   u32(bytes, centralOffset);
-  u16(bytes, 0);
+  u16(bytes, comment.length);
+  bytes.push(...comment);
   return new Uint8Array(bytes);
 }
 
