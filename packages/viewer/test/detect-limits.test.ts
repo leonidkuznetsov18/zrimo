@@ -5,6 +5,7 @@ import {
   defaultResourceLimits,
   detectFormat,
   enforceContainerLimits,
+  sniffFormat,
   ViewerError,
 } from "../src/index.js";
 
@@ -47,6 +48,46 @@ describe("format detection", () => {
       () => detectFormat(new TextEncoder().encode("plain text")),
       isCode("unsupported-format"),
     );
+  });
+
+  it("routes OOXML by entry names, not by bytes inside compressed parts", () => {
+    // Compressed media in a large deck routinely contains a random "xl/" or
+    // "word/" byte run; the archive's entry names must win over that noise.
+    const poisonedDeck = storedZip([
+      { name: "[Content_Types].xml" },
+      { name: "ppt/presentation.xml" },
+      {
+        name: "ppt/media/image1.bin",
+        data: new TextEncoder().encode("noise xl/workbook.xml word/ noise"),
+      },
+    ]);
+    assert.equal(detectFormat(poisonedDeck).format, "pptx");
+    assert.equal(
+      detectFormat(poisonedDeck, { fileName: "deck.pptx" }).format,
+      "pptx",
+    );
+
+    const workbook = storedZip([{ name: "xl/workbook.xml" }]);
+    assert.equal(detectFormat(workbook).format, "xlsx");
+  });
+
+  it("falls back to the byte scan when the central directory is missing", () => {
+    // sniffFormat callers may pass only a file prefix, which has no
+    // end-of-central-directory record.
+    const prefix = new TextEncoder().encode(
+      "PK truncated ppt/slides/slide1.xml",
+    );
+    assert.equal(sniffFormat(prefix), "pptx");
+  });
+
+  it("ignores EOCD signatures inside a ZIP comment", () => {
+    const falseEocd = new Uint8Array(22);
+    new DataView(falseEocd.buffer).setUint32(0, 0x06054b50, true);
+    const commentedDeck = storedZip(
+      [{ name: "ppt/presentation.xml" }],
+      falseEocd,
+    );
+    assert.equal(detectFormat(commentedDeck).format, "pptx");
   });
 
   it("rejects encrypted OOXML-in-OLE containers before adapter routing", () => {
@@ -115,6 +156,71 @@ describe("pre-allocation resource limits", () => {
     );
   });
 });
+
+/** Minimal stored (uncompressed) archive; CRCs stay zero — detection reads names only. */
+function storedZip(
+  entries: readonly { name: string; data?: Uint8Array }[],
+  comment = new Uint8Array(0),
+): Uint8Array {
+  const encoder = new TextEncoder();
+  const bytes: number[] = [];
+  const central: number[] = [];
+  const u16 = (target: number[], value: number): void => {
+    target.push(value & 0xff, (value >> 8) & 0xff);
+  };
+  const u32 = (target: number[], value: number): void => {
+    u16(target, value & 0xffff);
+    u16(target, (value >>> 16) & 0xffff);
+  };
+
+  for (const entry of entries) {
+    const name = encoder.encode(entry.name);
+    const data = entry.data ?? new Uint8Array(0);
+    const local = bytes.length;
+    u32(bytes, 0x04034b50);
+    u16(bytes, 20);
+    u16(bytes, 0);
+    u16(bytes, 0);
+    u32(bytes, 0);
+    u32(bytes, 0);
+    u32(bytes, data.length);
+    u32(bytes, data.length);
+    u16(bytes, name.length);
+    u16(bytes, 0);
+    bytes.push(...name, ...data);
+
+    u32(central, 0x02014b50);
+    u16(central, 20);
+    u16(central, 20);
+    u16(central, 0);
+    u16(central, 0);
+    u32(central, 0);
+    u32(central, 0);
+    u32(central, data.length);
+    u32(central, data.length);
+    u16(central, name.length);
+    u16(central, 0);
+    u16(central, 0);
+    u16(central, 0);
+    u16(central, 0);
+    u32(central, 0);
+    u32(central, local);
+    central.push(...name);
+  }
+
+  const centralOffset = bytes.length;
+  bytes.push(...central);
+  u32(bytes, 0x06054b50);
+  u16(bytes, 0);
+  u16(bytes, 0);
+  u16(bytes, entries.length);
+  u16(bytes, entries.length);
+  u32(bytes, central.length);
+  u32(bytes, centralOffset);
+  u16(bytes, comment.length);
+  bytes.push(...comment);
+  return new Uint8Array(bytes);
+}
 
 function centralDirectory(sizes: readonly number[]): Uint8Array {
   const bytes = new Uint8Array(sizes.length * 46);
