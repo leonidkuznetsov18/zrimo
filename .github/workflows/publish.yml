@@ -10,7 +10,9 @@ permissions:
 
 jobs:
   publish:
-    if: ${{ !github.event.release.prerelease }}
+    # npm publication belongs to the upstream project; this fork ships the
+    # verified tarball as a GitHub release asset (see release.yml).
+    if: ${{ github.repository == 'bnku/zrimo' && !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     environment: npm
     steps:

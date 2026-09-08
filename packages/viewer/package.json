@@ -17,7 +17,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/bnku/zrimo.git",
+    "url": "https://github.com/leonidkuznetsov18/zrimo.git",
     "directory": "packages/viewer"
   },
   "homepage": "https://bnku.github.io/zrimo/",
