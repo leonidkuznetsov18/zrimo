@@ -86,8 +86,8 @@ features:
 ## A small API with room to customize
 
 ```ts
-import { ViewerClient } from "@zrimo/viewer";
-import "@zrimo/viewer/styles.css";
+import { ViewerClient } from "web-doc";
+import "web-doc/styles.css";
 
 const client = ViewerClient.create({
   assetBaseUrl: new URL("/zrimo-assets/", location.href),

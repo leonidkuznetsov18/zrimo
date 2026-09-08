@@ -48,7 +48,7 @@ BREAKING CHANGE: <what changed for integrators>
 
 `npm ci` installs a `commit-msg` hook (`.githooks/commit-msg`) that checks the message locally; the `Commit messages` workflow repeats the check over every pull request commit and the title.
 
-Releases are automatic. On every push to `main`, the `Release` workflow runs [semantic-release](https://semantic-release.gitbook.io/): it derives the next version from the commits since the last tag, updates `CHANGELOG.md`, `packages/viewer/package.json`, `package-lock.json` and `release-status.json` in a `chore(release): x.y.z [skip ci]` commit, tags it `vx.y.z`, and publishes a GitHub release with the generated notes plus the verified `zrimo-viewer-x.y.z.tgz`, its `SHA256SUMS` and the package content report. No release is made when the commits since the last tag are all release-neutral. Consumers pin the tarball asset URL of a release as the `@zrimo/viewer` dependency.
+Releases are automatic. On every push to `main`, the `Release` workflow runs [semantic-release](https://semantic-release.gitbook.io/): it derives the next version from the commits since the last tag, updates `CHANGELOG.md`, `packages/viewer/package.json`, `package-lock.json` and `release-status.json` in a `chore(release): x.y.z [skip ci]` commit, tags it `vx.y.z`, and publishes a GitHub release with the generated notes plus the verified `zrimo-viewer-x.y.z.tgz`, its `SHA256SUMS` and the package content report. No release is made when the commits since the last tag are all release-neutral. Consumers pin the tarball asset URL of a release as the `web-doc` dependency.
 
 ## License
 

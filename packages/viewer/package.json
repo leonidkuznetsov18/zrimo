@@ -1,7 +1,7 @@
 {
-  "name": "@zrimo/viewer",
+  "name": "web-doc",
   "version": "0.2.0",
-  "description": "Zrimo — embeddable browser-only document viewer with Rust/WASM adapters",
+  "description": "web-doc — embeddable browser-only document viewer with Rust/WASM adapters (a fork of Zrimo)",
   "keywords": [
     "document-viewer",
     "wasm",
@@ -17,12 +17,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/leonidkuznetsov18/zrimo.git",
+    "url": "https://github.com/leonidkuznetsov18/web-doc.git",
     "directory": "packages/viewer"
   },
   "homepage": "https://bnku.github.io/zrimo/",
   "bugs": {
-    "url": "https://github.com/bnku/zrimo/issues"
+    "url": "https://github.com/leonidkuznetsov18/web-doc/issues"
   },
   "publishConfig": {
     "access": "public"
@@ -36,7 +36,7 @@
     "THIRD_PARTY_NOTICES.md"
   ],
   "bin": {
-    "zrimo-copy-assets": "./bin/copy-assets.mjs"
+    "web-doc-copy-assets": "./bin/copy-assets.mjs"
   },
   "exports": {
     ".": {

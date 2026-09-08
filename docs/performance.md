@@ -28,7 +28,7 @@ script-specific font packs can be fetched independently and cached by the
 browser.
 
 Avoid copying runtime assets into JavaScript bundles or importing every worker
-eagerly. The provided `zrimo-copy-assets` command preserves the directory
+eagerly. The provided `web-doc-copy-assets` command preserves the directory
 layout expected by the lazy loader.
 
 ## Integration guidance

@@ -11,7 +11,7 @@ const npmTree = JSON.parse(
       "--all",
       "--omit=dev",
       "--workspace",
-      "@zrimo/viewer",
+      "web-doc",
       "--include-workspace-root=false",
       "--json",
     ],
