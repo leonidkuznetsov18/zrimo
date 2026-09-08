@@ -5,7 +5,13 @@
 [Website](https://bnku.github.io/zrimo/) ·
 [Live React demo](https://bnku.github.io/zrimo/demo/) ·
 [Documentation](https://bnku.github.io/zrimo/getting-started) ·
-[GitHub](https://github.com/bnku/zrimo)
+[GitHub](https://github.com/leonidkuznetsov18/zrimo)
+
+> This build comes from the [leonidkuznetsov18/zrimo](https://github.com/leonidkuznetsov18/zrimo)
+> fork of [bnku/zrimo](https://github.com/bnku/zrimo). It is distributed as
+> GitHub release tarballs, not through npmjs.com, and adds page-scoped search
+> (`SearchOptions.pageRange`). The package name may change in a future major
+> release; see the fork's README for the current install instructions.
 
 Zrimo renders Office documents, PDFs, images and structured data directly
 inside your web application. Files stay in the browser: there is no conversion
@@ -26,13 +32,18 @@ server, upload step or telemetry.
 
 ## Install
 
+Pin a release tarball from the fork's
+[Releases](https://github.com/leonidkuznetsov18/zrimo/releases) page
+(`npm install @zrimo/viewer` would fetch the upstream package instead):
+
 ```bash
-npm install @zrimo/viewer
+npm install https://github.com/leonidkuznetsov18/zrimo/releases/download/v0.2.0/zrimo-viewer-0.2.0.tgz
 npx zrimo-copy-assets public/zrimo
 ```
 
 The second command copies workers, WASM modules and optional font assets into
-your application's public directory.
+your application's public directory. Upgrading means changing the version in
+the tarball URL; every release attaches `SHA256SUMS` for verification.
 
 ## Quick start
 
