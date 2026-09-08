@@ -28,6 +28,28 @@ Public qualification fixtures are downloaded into ignored `.cache/corpus/` with 
 - Update public API and integration documentation with the code.
 - Run `npm run audit:repository` and `npm run test:pack` before submitting packaging changes.
 
+## Commits and releases
+
+Every commit that lands on `main` must follow [Conventional Commits](https://www.conventionalcommits.org/), because the changelog and the version number are generated from the history:
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+BREAKING CHANGE: <what changed for integrators>
+```
+
+- `type` is one of `feat`, `fix`, `perf`, `revert`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`.
+- `scope` is required: `viewer`, `core`, `docs`, `examples`, `fuzz`, `ci`, `release`, `deps`, `repo` or `brand`. Extend the list in `commitlint.config.mjs` when a new area appears.
+- The subject is lower-case, imperative, at most 72 characters including the prefix, without a trailing period. Body lines wrap at 100 characters.
+- `feat` produces a minor release, `fix`/`perf`/`revert` a patch release, and a `BREAKING CHANGE:` footer (or `feat!:`) a major release. Only these types appear in `CHANGELOG.md`; everything else is release-neutral and hidden from it.
+- Pull request titles follow the same format: they become the commit subject on a squash merge.
+
+`npm ci` installs a `commit-msg` hook (`.githooks/commit-msg`) that checks the message locally; the `Commit messages` workflow repeats the check over every pull request commit and the title.
+
+Releases are automatic. On every push to `main`, the `Release` workflow runs [semantic-release](https://semantic-release.gitbook.io/): it derives the next version from the commits since the last tag, updates `CHANGELOG.md`, `packages/viewer/package.json`, `package-lock.json` and `release-status.json` in a `chore(release): x.y.z [skip ci]` commit, tags it `vx.y.z`, and publishes a GitHub release with the generated notes plus the verified `zrimo-viewer-x.y.z.tgz`, its `SHA256SUMS` and the package content report. No release is made when the commits since the last tag are all release-neutral. Consumers pin the tarball asset URL of a release as the `@zrimo/viewer` dependency.
+
 ## License
 
 Unless explicitly stated otherwise, contributions intentionally submitted for inclusion in Zrimo are licensed under the same `MIT OR Apache-2.0` terms as the project, without additional restrictions.
