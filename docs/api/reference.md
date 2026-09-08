@@ -109,7 +109,9 @@ The optional controls, shortcuts, localization, and CSS variables are documented
 
 ## Search and selection
 
-`search(query, { caseSensitive? })` searches logical text in page order. The default applies Unicode NFKC normalization and locale-independent case folding while mapping matches back to original UTF-16 offsets. It does not strip Arabic diacritics or reorder RTL text.
+`search(query, { caseSensitive?, pageRange? })` searches logical text in page order. The default applies Unicode NFKC normalization and locale-independent case folding while mapping matches back to original UTF-16 offsets. It does not strip Arabic diacritics or reorder RTL text.
+
+`pageRange` is an inclusive 0-based `[first, last]` window. It bounds both the pages whose text is read and the matches the result carries, so a caller that already knows where a passage lives — a citation with a page number, for example — highlights only that page instead of every incidental match in the document, and reads one page of text instead of all of them. Endpoint order does not matter; an out-of-range endpoint rejects with `render-failed` and leaves the standing result and its highlights untouched.
 
 ```ts
 const result = await viewer.search("привет");

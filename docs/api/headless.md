@@ -96,6 +96,9 @@ for (const match of matches) {
 }
 
 const pageText = await viewer.getPageText(0);
+
+// Scan one page only (inclusive 0-based range).
+const onPage3 = await viewer.search("日本語", { pageRange: [2, 2] });
 ```
 
 Matches point into the original logical UTF-16 text even when NFKC/case folding changed the search representation. Search is literal, not fuzzy, and preserves Arabic diacritics.

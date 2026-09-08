@@ -306,6 +306,13 @@ export interface ViewerEventMap {
 
 export interface SearchOptions {
   readonly caseSensitive?: boolean;
+  /**
+   * Inclusive 0-based page range to scan, as `[first, last]`. Restricts both
+   * the pages whose text is read and the returned matches; omit to search the
+   * whole document. A reversed range is normalized; an out-of-range endpoint
+   * is rejected.
+   */
+  readonly pageRange?: readonly [number, number];
 }
 
 export interface SearchMatch {
