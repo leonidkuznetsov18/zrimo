@@ -4,8 +4,10 @@ Zrimo is a browser-only viewer. Your application owns the file source and the co
 
 ## Install
 
+This fork is distributed as GitHub release tarballs; pin one from the [Releases](https://github.com/leonidkuznetsov18/zrimo/releases) page (`npm install @zrimo/viewer` fetches the upstream package instead):
+
 ```bash
-npm install @zrimo/viewer
+npm install https://github.com/leonidkuznetsov18/zrimo/releases/download/v0.2.0/zrimo-viewer-0.2.0.tgz
 ```
 
 The package ships ESM, TypeScript declarations, workers, Rust/WASM modules, PDF.js resources, CSS and optional self-hosted fonts. Its build tooling requires Node.js 22.13+ or 24+ because the PDF.js dependency uses that engine baseline.
