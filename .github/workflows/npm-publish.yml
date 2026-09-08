@@ -1,0 +1,53 @@
+name: Publish to npm
+
+# Publishes the tarball attached to an existing GitHub release. The Release
+# workflow does this itself when NPM_TOKEN is present; this fills the gap for
+# releases made before the secret existed, and for a retry after a registry
+# failure. It never rebuilds: the asset that was verified at release time is
+# the only thing that reaches the registry.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish (for example v0.3.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: Download the release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release download "${{ inputs.tag }}"
+          --repo "${{ github.repository }}"
+          --pattern 'web-doc-*.tgz'
+          --pattern SHA256SUMS
+          --dir release
+      - name: Verify the tarball against SHA256SUMS
+        working-directory: release
+        run: sha256sum --check SHA256SUMS
+      - name: Refuse a version that is already on the registry
+        working-directory: release
+        run: |
+          VERSION="$(tar -xOzf web-doc-*.tgz package/package.json | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version")"
+          test "v$VERSION" = "${{ inputs.tag }}"
+          if npm view "web-doc@$VERSION" version >/dev/null 2>&1; then
+            echo "::error::web-doc@$VERSION is already published"
+            exit 1
+          fi
+      - name: Publish
+        working-directory: release
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish web-doc-*.tgz --access public --provenance
