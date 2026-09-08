@@ -72,7 +72,7 @@ test("landing, documentation, and React demo ship as one Pages site", async ({
   await expect(
     page.getByRole("heading", { name: "Getting started" }),
   ).toBeVisible();
-  await expect(page.getByText("npm install @zrimo/viewer")).toBeVisible();
+  await expect(page.getByText("npm install web-doc")).toBeVisible();
   await page
     .getByLabel("Main Navigation")
     .getByRole("link", { name: "React demo", exact: true })

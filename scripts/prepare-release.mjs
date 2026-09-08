@@ -15,7 +15,7 @@ if (!/^\d+\.\d+\.\d+$/.test(version ?? "")) {
 
 execFileSync(
   "npm",
-  ["version", version, "--no-git-tag-version", "--workspace", "@zrimo/viewer"],
+  ["version", version, "--no-git-tag-version", "--workspace", "web-doc"],
   { cwd: root, stdio: "inherit" },
 );
 

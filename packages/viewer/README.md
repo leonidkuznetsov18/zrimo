@@ -1,23 +1,19 @@
-# @zrimo/viewer
+# web-doc
 
 **Any document. One canvas.**
 
 [Website](https://bnku.github.io/zrimo/) ·
 [Live React demo](https://bnku.github.io/zrimo/demo/) ·
 [Documentation](https://bnku.github.io/zrimo/getting-started) ·
-[GitHub](https://github.com/leonidkuznetsov18/zrimo)
+[GitHub](https://github.com/leonidkuznetsov18/web-doc)
 
-> This build comes from the [leonidkuznetsov18/zrimo](https://github.com/leonidkuznetsov18/zrimo)
-> fork of [bnku/zrimo](https://github.com/bnku/zrimo). It is distributed as
-> GitHub release tarballs, not through npmjs.com, and adds page-scoped search
-> (`SearchOptions.pageRange`). The package name may change in a future major
-> release; see the fork's README for the current install instructions.
+> web-doc is a fork of [Zrimo](https://github.com/bnku/zrimo) maintained at
+> [leonidkuznetsov18/web-doc](https://github.com/leonidkuznetsov18/web-doc).
+> It adds page-scoped search (`SearchOptions.pageRange`) and is released
+> independently; the runtime API, CSS hooks (`.zrimo-ui`, `--zrimo-*`) and
+> asset layout are the same as upstream's `@zrimo/viewer`.
 
-Zrimo renders Office documents, PDFs, images and structured data directly
-inside your web application. Files stay in the browser: there is no conversion
-server, upload step or telemetry.
-
-## Why Zrimo?
+## Why web-doc?
 
 - **One viewer for common business formats.** Open DOCX, XLSX, PPTX, legacy
   Office, PDF, images, SVG, CSV and TSV through one TypeScript API.
@@ -32,24 +28,22 @@ server, upload step or telemetry.
 
 ## Install
 
-Pin a release tarball from the fork's
-[Releases](https://github.com/leonidkuznetsov18/zrimo/releases) page
-(`npm install @zrimo/viewer` would fetch the upstream package instead):
-
 ```bash
-npm install https://github.com/leonidkuznetsov18/zrimo/releases/download/v0.2.0/zrimo-viewer-0.2.0.tgz
-npx zrimo-copy-assets public/zrimo
+npm install web-doc
+npx web-doc-copy-assets public/zrimo
 ```
 
 The second command copies workers, WASM modules and optional font assets into
-your application's public directory. Upgrading means changing the version in
-the tarball URL; every release attaches `SHA256SUMS` for verification.
+your application's public directory. Until a version is on npm, every
+[GitHub release](https://github.com/leonidkuznetsov18/web-doc/releases) carries
+the same tarball (`web-doc-x.y.z.tgz`, with `SHA256SUMS`), which can be
+pinned by URL instead.
 
 ## Quick start
 
 ```ts
-import { ViewerClient } from "@zrimo/viewer";
-import "@zrimo/viewer/styles.css";
+import { ViewerClient } from "web-doc";
+import "web-doc/styles.css";
 
 const client = ViewerClient.create({
   assetBaseUrl: new URL("/zrimo/", location.href),
@@ -87,7 +81,7 @@ framework setup, asset paths and production MIME configuration.
 | ----------- | ---------------------------------------- | ----------------------------------------------------- |
 | Built-in UI | `createViewer({ container, ui: true })`  | A complete viewer with minimal host code              |
 | Custom UI   | `createViewer({ container, ui: false })` | React/Vue/Svelte controls around the managed viewport |
-| Headless    | `@zrimo/viewer/headless`                 | Custom canvas rendering and application-owned layout  |
+| Headless    | `web-doc/headless`                       | Custom canvas rendering and application-owned layout  |
 
 The [live React demo](https://bnku.github.io/zrimo/demo/) shows the built-in UI,
 a fully custom React toolbar and the headless API side by side.
@@ -109,11 +103,11 @@ render with reduced fidelity. The maintained details live in the
 
 ## Public entry points
 
-- `@zrimo/viewer` — complete API and optional built-in UI;
-- `@zrimo/viewer/headless` — UI-free runtime and adapters;
-- `@zrimo/viewer/worker` — worker adapter and RPC contracts;
-- `@zrimo/viewer/styles.css` — built-in UI styles;
-- `@zrimo/viewer/assets/*`, `/workers/*`, `/fonts/*` — explicit runtime assets.
+- `web-doc` — complete API and optional built-in UI;
+- `web-doc/headless` — UI-free runtime and adapters;
+- `web-doc/worker` — worker adapter and RPC contracts;
+- `web-doc/styles.css` — built-in UI styles;
+- `web-doc/assets/*`, `/workers/*`, `/fonts/*` — explicit runtime assets.
 
 Start with the [API reference](https://bnku.github.io/zrimo/api/reference),
 [UI guide](https://bnku.github.io/zrimo/ui) or

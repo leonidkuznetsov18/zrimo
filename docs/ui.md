@@ -15,7 +15,7 @@ const viewer = client.createViewer({
 await viewer.load(file, { fileName: file.name });
 ```
 
-Give the container a defined height. The UI fills it and owns only children under `.zrimo-ui`. It injects scoped critical CSS for a no-setup default; the same stylesheet is exported as `@zrimo/viewer/styles.css` for CSP/build pipelines that prefer an explicit asset.
+Give the container a defined height. The UI fills it and owns only children under `.zrimo-ui`. It injects scoped critical CSS for a no-setup default; the same stylesheet is exported as `web-doc/styles.css` for CSP/build pipelines that prefer an explicit asset.
 
 ## Controls
 
@@ -95,7 +95,7 @@ All component selectors start with `.zrimo-ui`; no generic `button`, `canvas`, o
 
 ```tsx
 import { useEffect, useRef } from "react";
-import { ViewerClient } from "@zrimo/viewer";
+import { ViewerClient } from "web-doc";
 
 export function DocumentPreview({ file }: { file: File }) {
   const container = useRef<HTMLDivElement>(null);

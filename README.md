@@ -1,21 +1,20 @@
-# Zrimo
+# web-doc
 
 **Any document. One canvas.**
 
-[Releases](https://github.com/leonidkuznetsov18/zrimo/releases) ·
+[Releases](https://github.com/leonidkuznetsov18/web-doc/releases) ·
 [Upstream website](https://bnku.github.io/zrimo/) ·
 [Live React demo](https://bnku.github.io/zrimo/demo/) ·
 [Documentation](https://bnku.github.io/zrimo/getting-started)
 
-Zrimo is a framework-agnostic, browser-side document viewer with a TypeScript API and lazily loaded Rust/WASM adapters. It renders modern Office, qualified Word 97–2003 DOC and legacy XLS/PPT, PDF, images, SVG and delimited data without uploading documents to a conversion service.
+web-doc is a framework-agnostic, browser-side document viewer with a TypeScript API and lazily loaded Rust/WASM adapters. It renders modern Office, qualified Word 97–2003 DOC and legacy XLS/PPT, PDF, images, SVG and delimited data without uploading documents to a conversion service.
 
 ## About this fork
 
-This repository is a fork of [bnku/zrimo](https://github.com/bnku/zrimo), maintained by [@leonidkuznetsov18](https://github.com/leonidkuznetsov18). It carries changes that are proposed upstream but are needed before they land there — currently page-scoped search (`SearchOptions.pageRange`, see the [API reference](docs/api/reference.md)). Everything else, including the upstream documentation, applies unchanged.
+web-doc is a fork of [Zrimo](https://github.com/bnku/zrimo) (`@zrimo/viewer`), maintained by [@leonidkuznetsov18](https://github.com/leonidkuznetsov18) and released independently under its own name. It carries changes that are proposed upstream but are needed before they land there — currently page-scoped search (`SearchOptions.pageRange`, see the [API reference](docs/api/reference.md)). Everything else, including the upstream documentation, applies unchanged.
 
-- **The npm package is not this fork.** `npm install @zrimo/viewer` fetches the upstream package from npmjs.com, without this fork's changes. This fork is distributed as GitHub releases: every merge to `main` produces a version, a changelog entry and a release with the verified tarball (see [Commits and releases](CONTRIBUTING.md#commits-and-releases)).
-- **The package name is still `@zrimo/viewer`**, so the import paths, the `zrimo-copy-assets` command and the asset layout are identical to upstream and switching between the two is a one-line change in `package.json`.
-- **The name is expected to change** once the fork gets its own registry scope. That rename will ship as a major release, with the new package name and import paths spelled out in the release notes and in this README; until then, pin release tarballs as shown below.
+- **The package is `web-doc`** on npm; `@zrimo/viewer` on npmjs.com is the upstream package and does not contain this fork's changes. Switching between the two is the dependency name and the import specifier — the runtime API, the CSS hooks (`.zrimo-ui`, `--zrimo-*`, `data-zrimo-*`) and the asset layout are identical.
+- **Releases are automatic.** Every merge to `main` produces a semantic version, a changelog entry, a GitHub release with the verified tarball, and an npm publication (see [Commits and releases](CONTRIBUTING.md#commits-and-releases)).
 
 ## Supported formats
 
@@ -32,30 +31,16 @@ The viewer supports Latin/Cyrillic, CJK, Arabic-script and the agreed Indic scri
 
 ## Install and quick start
 
-Install a release tarball from this repository's [Releases](https://github.com/leonidkuznetsov18/zrimo/releases) page — the URL pins the exact build, and upgrading means changing the version in it:
-
 ```bash
-npm install https://github.com/leonidkuznetsov18/zrimo/releases/download/v0.2.0/zrimo-viewer-0.2.0.tgz
-# pnpm add https://github.com/leonidkuznetsov18/zrimo/releases/download/v0.2.0/zrimo-viewer-0.2.0.tgz
-# yarn add @zrimo/viewer@https://github.com/leonidkuznetsov18/zrimo/releases/download/v0.2.0/zrimo-viewer-0.2.0.tgz
-npx zrimo-copy-assets public/vendor/zrimo
+npm install web-doc
+npx web-doc-copy-assets public/vendor/zrimo
 ```
 
-The same pin in `package.json`:
-
-```json
-{
-  "dependencies": {
-    "@zrimo/viewer": "https://github.com/leonidkuznetsov18/zrimo/releases/download/v0.2.0/zrimo-viewer-0.2.0.tgz"
-  }
-}
-```
-
-Each release also attaches `SHA256SUMS` and `pack-report.json` (the packed file list with its integrity hash) so the tarball can be verified before it is adopted. The second command above copies workers, WASM modules and optional font assets into your application's public directory.
+Every [GitHub release](https://github.com/leonidkuznetsov18/web-doc/releases) also attaches the same tarball (`web-doc-x.y.z.tgz`) with `SHA256SUMS` and `pack-report.json`, so a build can be pinned by URL or verified before it is adopted. The second command copies workers, WASM modules and optional font assets into your application's public directory.
 
 ```ts
-import { ViewerClient } from "@zrimo/viewer";
-import "@zrimo/viewer/styles.css";
+import { ViewerClient } from "web-doc";
+import "web-doc/styles.css";
 
 const client = ViewerClient.create({
   assetBaseUrl: new URL("/vendor/zrimo/", location.href),
@@ -72,7 +57,7 @@ await viewer.destroy();
 await client.destroy();
 ```
 
-Use `@zrimo/viewer/headless` for UI-free integration and `@zrimo/viewer/worker` for custom adapter infrastructure. The [getting-started guide](docs/getting-started.md) covers CDN/self-host layouts and MIME requirements.
+Use `web-doc/headless` for UI-free integration and `web-doc/worker` for custom adapter infrastructure. The [getting-started guide](docs/getting-started.md) covers CDN/self-host layouts and MIME requirements.
 
 ## Browser and privacy baseline
 

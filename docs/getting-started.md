@@ -4,10 +4,8 @@ Zrimo is a browser-only viewer. Your application owns the file source and the co
 
 ## Install
 
-This fork is distributed as GitHub release tarballs; pin one from the [Releases](https://github.com/leonidkuznetsov18/zrimo/releases) page (`npm install @zrimo/viewer` fetches the upstream package instead):
-
 ```bash
-npm install https://github.com/leonidkuznetsov18/zrimo/releases/download/v0.2.0/zrimo-viewer-0.2.0.tgz
+npm install web-doc
 ```
 
 The package ships ESM, TypeScript declarations, workers, Rust/WASM modules, PDF.js resources, CSS and optional self-hosted fonts. Its build tooling requires Node.js 22.13+ or 24+ because the PDF.js dependency uses that engine baseline.
@@ -15,8 +13,8 @@ The package ships ESM, TypeScript declarations, workers, Rust/WASM modules, PDF.
 ## Create a viewer
 
 ```ts
-import { ViewerClient } from "@zrimo/viewer";
-import "@zrimo/viewer/styles.css";
+import { ViewerClient } from "web-doc";
+import "web-doc/styles.css";
 
 const client = ViewerClient.create({
   assetBaseUrl: new URL("/vendor/zrimo/", location.href),
@@ -46,10 +44,10 @@ Give the host an explicit height:
 Copy the runtime directories into your application's public output. The package includes a small build-time CLI for this:
 
 ```bash
-npx zrimo-copy-assets public/vendor/zrimo
+npx web-doc-copy-assets public/vendor/zrimo
 ```
 
-It copies these directories from `node_modules/@zrimo/viewer/dist/` to the destination:
+It copies these directories from `node_modules/web-doc/dist/` to the destination:
 
 ```text
 assets/

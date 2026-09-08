@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 
 await import("./fetch-corpus.mjs");
 await import("./build-wasm.mjs");
-execFileSync("npm", ["run", "build", "--workspace", "@zrimo/viewer"], {
+execFileSync("npm", ["run", "build", "--workspace", "web-doc"], {
   stdio: "inherit",
 });
 // Playwright reuses an already running local example server. Refresh its

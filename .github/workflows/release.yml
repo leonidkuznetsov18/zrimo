@@ -27,6 +27,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
+          registry-url: https://registry.npmjs.org
       - run: npm install --global npm@11.16.0
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -36,6 +37,10 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Optional: with a granular npm token the release is also published to
+          # npmjs.org (with provenance); without it only the GitHub release ships.
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
         run: >-
           npx --yes
           --package semantic-release@25.0.9

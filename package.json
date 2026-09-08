@@ -36,7 +36,7 @@
     "test:e2e:matrix": "node scripts/e2e.mjs --config=playwright.matrix.config.ts",
     "test:pages": "node scripts/test-pages.mjs",
     "test:qualification": "node scripts/qualification.mjs",
-    "fuzz:js": "npm run build --workspace @zrimo/viewer && node scripts/fuzz-js.mjs",
+    "fuzz:js": "npm run build --workspace web-doc && node scripts/fuzz-js.mjs",
     "fuzz:rust": "node scripts/fuzz-rust.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "audit:repository": "node scripts/repository-audit.mjs",

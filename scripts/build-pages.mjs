@@ -11,7 +11,7 @@ const demoBase = `${base}demo/`;
 const env = { ...process.env, PAGES_BASE: base, ZRIMO_BASE_PATH: demoBase };
 
 run("node", ["scripts/build-wasm.mjs"]);
-run("npm", ["run", "build", "--workspace", "@zrimo/viewer"]);
+run("npm", ["run", "build", "--workspace", "web-doc"]);
 run("npm", ["run", "build", "--workspace", "@zrimo/example-react"]);
 run("node", ["node_modules/vitepress/bin/vitepress.js", "build", "docs"]);
 

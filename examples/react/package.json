@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@zrimo/viewer": "0.1.2",
+    "web-doc": "*",
     "react": "19.2.7",
     "react-dom": "19.2.7"
   },

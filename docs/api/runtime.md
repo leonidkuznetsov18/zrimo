@@ -3,7 +3,7 @@
 The runtime exposes one shared `ViewerClient` and one or more `DocumentViewer` instances. Imports are SSR-safe: construction does not touch the DOM, start workers, initialize WASM, or make network requests.
 
 ```ts
-import { ViewerClient } from "@zrimo/viewer";
+import { ViewerClient } from "web-doc";
 
 const client = ViewerClient.create({
   assetBaseUrl: new URL("/viewer-assets/", location.href),

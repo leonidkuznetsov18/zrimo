@@ -42,7 +42,7 @@ jobs:
       - name: Stage verified release assets
         run: |
           mkdir -p artifacts/release
-          cp .cache/pack-test/zrimo-viewer-*.tgz artifacts/release/
+          cp .cache/pack-test/web-doc-*.tgz artifacts/release/
           cp .cache/pack-test/SHA256SUMS artifacts/release/
           cp artifacts/pack-report.json artifacts/release/pack-report.json
           cp artifacts/pack-report.json artifacts/release/source-build-pack-report.json
@@ -82,7 +82,7 @@ jobs:
           fi
       - name: Publish the verified tarball to npm
         if: steps.registry.outputs.published != 'true'
-        run: npm publish artifacts/release/zrimo-viewer-*.tgz --access public
+        run: npm publish artifacts/release/web-doc-*.tgz --access public
       - name: Attach verified artifacts to the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}

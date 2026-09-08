@@ -19,8 +19,8 @@ import {
   type ViewerApi,
   type ViewerProgress,
   type ViewerState,
-} from "@zrimo/viewer";
-import "@zrimo/viewer/styles.css";
+} from "web-doc";
+import "web-doc/styles.css";
 import "./styles.css";
 
 type ExampleTab = "built-in" | "react-ui" | "headless";

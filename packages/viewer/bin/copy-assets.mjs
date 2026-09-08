@@ -7,7 +7,7 @@ const packageRoot = resolve(import.meta.dirname, "..");
 const destination = process.argv[2];
 
 if (!destination || destination === "--help" || destination === "-h") {
-  console.log("Usage: zrimo-copy-assets <public-directory>");
+  console.log("Usage: web-doc-copy-assets <public-directory>");
   console.log("Copies Zrimo workers, WASM/PDF assets, and optional fonts.");
   process.exit(destination ? 0 : 1);
 }
