@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.0](https://github.com/leonidkuznetsov18/web-doc/compare/v0.2.0...v0.3.0) (2026-09-08)
+
+### Features
+
+* **release:** rename the package to web-doc ([7667d9e](https://github.com/leonidkuznetsov18/web-doc/commit/7667d9e44e292a64cfe3b1e8afbc6ad66e513acd))
+
 ## [0.2.0](https://github.com/leonidkuznetsov18/zrimo/compare/v0.1.2...v0.2.0) (2026-09-08)
 
 ### Features
