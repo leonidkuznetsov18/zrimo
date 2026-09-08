@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.0](https://github.com/leonidkuznetsov18/zrimo/compare/v0.1.2...v0.2.0) (2026-09-08)
+
+### Features
+
+* **viewer:** scope search to an explicit page range ([257dfb4](https://github.com/leonidkuznetsov18/zrimo/commit/257dfb40a6754f2d1d38393a8e4ae1bad76d340c))
+
 ## 0.1.2 — 2026-08-28
 
 - Fixed OOXML subtype detection for media-heavy ZIP packages by reading
