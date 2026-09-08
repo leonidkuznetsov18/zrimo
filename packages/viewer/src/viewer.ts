@@ -528,6 +528,12 @@ export class DocumentViewer implements ViewerApi {
     options: SearchOptions = {},
   ): Promise<SearchResult> {
     const { info } = this.#assertReady();
+    // Validated before the in-flight search is cancelled so a rejected range
+    // leaves the current result and highlights untouched.
+    const [firstPage, lastPage] = resolveSearchPageRange(
+      info.pageCount,
+      options.pageRange,
+    );
     this.#activeSearch?.abort();
     const controller = new AbortController();
     this.#activeSearch = controller;
@@ -539,7 +545,7 @@ export class DocumentViewer implements ViewerApi {
     }
     const matches: SearchMatch[] = [];
     try {
-      for (let pageIndex = 0; pageIndex < info.pageCount; pageIndex += 1) {
+      for (let pageIndex = firstPage; pageIndex <= lastPage; pageIndex += 1) {
         if (controller.signal.aborted) throw abortError();
         const text = await this.getPageText(pageIndex, controller.signal);
         matches.push(
@@ -991,6 +997,22 @@ function assertRenderBudget(
       "Render target exceeds the configured pixel limit",
       { details: { width, height, pixels, limit } },
     );
+}
+
+/**
+ * Resolve the inclusive 0-based page window a search scans. Omitting the range
+ * searches the whole document; a reversed range is normalized so callers can
+ * pass either endpoint order.
+ */
+function resolveSearchPageRange(
+  pageCount: number,
+  pageRange: readonly [number, number] | undefined,
+): [number, number] {
+  if (!pageRange) return [0, pageCount - 1];
+  const [first, last] = pageRange;
+  assertPageIndex(first, pageCount);
+  assertPageIndex(last, pageCount);
+  return first <= last ? [first, last] : [last, first];
 }
 
 function assertPageIndex(pageIndex: number, pageCount: number): void {

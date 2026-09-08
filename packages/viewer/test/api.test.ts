@@ -85,6 +85,44 @@ describe("public headless API", () => {
     assert.equal(searchEvents.at(-1), null);
   });
 
+  it("scopes search to an explicit page range and rejects invalid ranges", async () => {
+    const textReads: number[] = [];
+    const viewer = ViewerClient.create({
+      adapters: [textAdapter([], textReads)],
+    }).createViewer();
+    await viewer.load(pdfBytes);
+
+    const scoped = await viewer.search("привет", { pageRange: [1, 1] });
+    assert.deepEqual(
+      scoped.matches.map((match) => match.pageIndex),
+      [1],
+    );
+    // Only the requested page is read; unscoped search covers the whole document.
+    assert.deepEqual(textReads, [1]);
+    assert.equal((await viewer.search("привет")).matches.length, 2);
+
+    // Endpoint order is caller-friendly.
+    assert.equal(
+      (await viewer.search("привет", { pageRange: [1, 0] })).matches.length,
+      2,
+    );
+
+    const standing = await viewer.search("привет", { pageRange: [0, 0] });
+    await assert.rejects(
+      viewer.search("привет", { pageRange: [0, 3] }),
+      isCode("render-failed"),
+    );
+    await assert.rejects(
+      viewer.search("привет", { pageRange: [-1, 0] }),
+      isCode("render-failed"),
+    );
+    // A rejected range leaves the standing result (and its highlights) alone.
+    assert.deepEqual(
+      viewer.searchNext()?.matches.map((match) => match.pageIndex),
+      standing.matches.map((match) => match.pageIndex),
+    );
+  });
+
   it("cancels headless rendering on close and rejects stale completion", async () => {
     let started: (() => void) | undefined;
     const rendering = new Promise<void>((resolve) => {
@@ -203,7 +241,10 @@ describe("spreadsheet interaction contract", () => {
   });
 });
 
-function textAdapter(renders: RenderViewport[] = []): DocumentAdapter {
+function textAdapter(
+  renders: RenderViewport[] = [],
+  textReads: number[] = [],
+): DocumentAdapter {
   const info: DocumentInfo = { format: "pdf", unit: "page", pageCount: 3 };
   const text: readonly (readonly TextRun[])[] = [
     [run("Привет ", 0), run("мир", 50)],
@@ -218,7 +259,10 @@ function textAdapter(renders: RenderViewport[] = []): DocumentAdapter {
     render: async (_handle, _target, viewport) => {
       renders.push(viewport);
     },
-    getTextMap: async (_handle, pageIndex) => text[pageIndex] ?? [],
+    getTextMap: async (_handle, pageIndex) => {
+      textReads.push(pageIndex);
+      return text[pageIndex] ?? [];
+    },
     close: () => {},
   };
 }
