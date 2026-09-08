@@ -40,6 +40,9 @@ jobs:
           # Optional: with a granular npm token the release is also published to
           # npmjs.org (with provenance); without it only the GitHub release ships.
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Set the repository variable to "true" once npmjs.com lists this
+          # workflow as the package's trusted publisher; the token can then go.
+          NPM_TRUSTED_PUBLISHING: ${{ vars.NPM_TRUSTED_PUBLISHING }}
           NPM_CONFIG_PROVENANCE: "true"
         run: >-
           npx --yes

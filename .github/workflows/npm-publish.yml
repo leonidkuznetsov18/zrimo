@@ -49,5 +49,7 @@ jobs:
       - name: Publish
         working-directory: release
         env:
+          # Empty once the package has a trusted publisher: npm then
+          # authenticates through the job's OIDC token instead.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish web-doc-*.tgz --access public --provenance

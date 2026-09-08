@@ -1,10 +1,15 @@
 // semantic-release configuration. Runs from .github/workflows/release.yml on
 // every push to main; see CONTRIBUTING.md ("Commits and releases").
 //
-// npm publication is opt-in: it happens only when the workflow has an
-// NPM_TOKEN secret, so a repository without one still gets the changelog, the
-// tag and the GitHub release with the verified tarball.
-const publishToNpm = Boolean(process.env.NPM_TOKEN);
+// npm publication is opt-in, so a repository without it still gets the
+// changelog, the tag and the GitHub release with the verified tarball. It is
+// enabled by an NPM_TOKEN secret (granular access token) or, once the package
+// has a GitHub Actions trusted publisher on npmjs.com, by the repository
+// variable NPM_TRUSTED_PUBLISHING=true: then @semantic-release/npm publishes
+// through OIDC (the job has id-token: write) and no token is needed.
+const publishToNpm =
+  Boolean(process.env.NPM_TOKEN) ||
+  process.env.NPM_TRUSTED_PUBLISHING === "true";
 
 export default {
   branches: ["main"],
