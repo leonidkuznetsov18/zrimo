@@ -11,7 +11,7 @@ web-doc is a framework-agnostic, browser-side document viewer with a TypeScript 
 
 ## About this fork
 
-web-doc is a fork of [Zrimo](https://github.com/bnku/zrimo) (`@zrimo/viewer`), maintained by [@leonidkuznetsov18](https://github.com/leonidkuznetsov18) and released independently under its own name. It carries changes that are proposed upstream but are needed before they land there — currently page-scoped search (`SearchOptions.pageRange`, see the [API reference](docs/api/reference.md)). Everything else, including the upstream documentation, applies unchanged.
+web-doc is a fork of [Zrimo](https://github.com/bnku/zrimo) (`@zrimo/viewer`), maintained by [@leonidkuznetsov18](https://github.com/leonidkuznetsov18) and released independently under its own name. It carries changes that are proposed upstream but are needed before they land there — currently page-scoped search (`SearchOptions.pageRange`) and an approximate page hint with a fuzzy fallback (`SearchOptions.nearPage` / `fuzzy`, see the [API reference](docs/api/reference.md)). Everything else, including the upstream documentation, applies unchanged.
 
 - **The package is `web-doc`** on npm; `@zrimo/viewer` on npmjs.com is the upstream package and does not contain this fork's changes. Switching between the two is the dependency name and the import specifier — the runtime API, the CSS hooks (`.zrimo-ui`, `--zrimo-*`, `data-zrimo-*`) and the asset layout are identical.
 - **Releases are automatic.** Every merge to `main` produces a semantic version, a changelog entry, a GitHub release with the verified tarball, and an npm publication (see [Commits and releases](CONTRIBUTING.md#commits-and-releases)).

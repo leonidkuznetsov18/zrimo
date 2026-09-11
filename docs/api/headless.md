@@ -99,9 +99,17 @@ const pageText = await viewer.getPageText(0);
 
 // Scan one page only (inclusive 0-based range).
 const onPage3 = await viewer.search("日本語", { pageRange: [2, 2] });
+
+// A citation whose page number came from another pagination: land on the
+// match nearest to the hint, and bridge spacing/punctuation differences when
+// the exact text is not found.
+const cited = await viewer.search(citation.text, {
+  nearPage: citation.page - 1,
+  fuzzy: true,
+});
 ```
 
-Matches point into the original logical UTF-16 text even when NFKC/case folding changed the search representation. Search is literal, not fuzzy, and preserves Arabic diacritics.
+Matches point into the original logical UTF-16 text even when NFKC/case folding changed the search representation. Search is exact by default and preserves Arabic diacritics; the opt-in `fuzzy` fallback (Fuse.js) tolerates spacing, list-marker and punctuation differences and still highlights the verbatim page text.
 
 ## Programmatic selection and copy
 
