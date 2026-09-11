@@ -2,6 +2,7 @@ import type {
   AdapterOpenContext,
   DocumentAdapter,
   DocumentInfo,
+  PageSize,
   RenderViewport,
   ViewerWarning,
 } from "../contracts.js";
@@ -10,6 +11,8 @@ import { drawEncodedImage } from "./bitmap.js";
 
 interface SvgHandle {
   readonly data: Uint8Array;
+  /** Intrinsic size from the root `width`/`height` or `viewBox`, when declared. */
+  readonly size: PageSize | undefined;
   readonly warnings: readonly ViewerWarning[];
 }
 
@@ -34,6 +37,7 @@ export class SvgDocumentAdapter implements DocumentAdapter<SvgHandle> {
     const changed = sanitized !== source;
     return {
       data: new TextEncoder().encode(sanitized),
+      size: parseSvgSize(sanitized),
       warnings: changed
         ? [
             {
@@ -50,6 +54,7 @@ export class SvgDocumentAdapter implements DocumentAdapter<SvgHandle> {
       format: "svg",
       unit: "image",
       pageCount: 1,
+      ...(handle.size ? { pageSizes: [handle.size] } : {}),
       warnings: handle.warnings,
     };
   }
@@ -122,6 +127,66 @@ export function sanitizeSvg(source: string): string {
     }
   }
   return new XMLSerializer().serializeToString(document.documentElement);
+}
+
+/** CSS absolute units → CSS pixels; percentages and unknown units are ignored. */
+const SVG_LENGTH_UNITS: Readonly<Record<string, number>> = {
+  "": 1,
+  px: 1,
+  pt: 96 / 72,
+  pc: 16,
+  in: 96,
+  cm: 96 / 2.54,
+  mm: 96 / 25.4,
+};
+
+/**
+ * Intrinsic size of the root `<svg>` in CSS pixels at zoom 1: explicit
+ * `width`/`height` win, a `viewBox` stands in for a missing pair, and a
+ * document that declares neither has no natural size (the viewport keeps its
+ * fallback page geometry).
+ */
+export function parseSvgSize(source: string): PageSize | undefined {
+  const root = /<svg\b([^>]*)>/i.exec(source);
+  if (!root) return undefined;
+  const width = parseSvgLength(svgAttribute(root[1] ?? "", "width"));
+  const height = parseSvgLength(svgAttribute(root[1] ?? "", "height"));
+  if (width && height) return { width, height };
+  const viewBox = svgAttribute(root[1] ?? "", "viewBox")
+    ?.trim()
+    .split(/[\s,]+/)
+    .map(Number);
+  if (
+    viewBox?.length === 4 &&
+    viewBox.every(Number.isFinite) &&
+    viewBox[2]! > 0 &&
+    viewBox[3]! > 0
+  ) {
+    // One declared side scales the viewBox aspect; none means viewBox units.
+    if (width) return { width, height: (width * viewBox[3]!) / viewBox[2]! };
+    if (height) return { width: (height * viewBox[2]!) / viewBox[3]!, height };
+    return { width: viewBox[2]!, height: viewBox[3]! };
+  }
+  return undefined;
+}
+
+function svgAttribute(attributes: string, name: string): string | undefined {
+  const match = new RegExp(
+    `(?:^|\\s)${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`,
+    "i",
+  ).exec(attributes);
+  return match?.[1] ?? match?.[2];
+}
+
+function parseSvgLength(value: string | undefined): number | undefined {
+  const match = /^\s*([0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?)\s*([a-z%]*)\s*$/i.exec(
+    value ?? "",
+  );
+  if (!match) return undefined;
+  const factor = SVG_LENGTH_UNITS[match[2]!.toLowerCase()];
+  if (factor === undefined) return undefined;
+  const length = Number(match[1]) * factor;
+  return Number.isFinite(length) && length > 0 ? length : undefined;
 }
 
 export function createSvgAdapter(): SvgDocumentAdapter {

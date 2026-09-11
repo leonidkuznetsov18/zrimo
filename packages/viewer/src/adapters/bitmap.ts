@@ -41,6 +41,25 @@ export async function drawEncodedImage(
   }
 }
 
+/**
+ * Decode an encoded image only to read its natural size, in CSS pixels at
+ * zoom 1. Uses the same decoder as {@link drawEncodedImage}, so EXIF
+ * orientation is applied and the result matches what a render will draw.
+ */
+export async function measureEncodedImage(
+  data: Uint8Array,
+  mimeType: string,
+): Promise<{ width: number; height: number }> {
+  const decoded = await decodeImage(
+    new Blob([data.slice()], { type: mimeType }),
+  );
+  try {
+    return { width: decoded.width, height: decoded.height };
+  } finally {
+    decoded.close();
+  }
+}
+
 async function decodeImage(blob: Blob): Promise<{
   readonly source: CanvasImageSource;
   readonly width: number;

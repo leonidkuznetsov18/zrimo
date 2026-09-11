@@ -3,11 +3,12 @@ import type {
   DocumentAdapter,
   DocumentFormat,
   DocumentInfo,
+  PageSize,
   RenderViewport,
   ViewerWarning,
 } from "../contracts.js";
 import { abortError, ViewerError } from "../errors.js";
-import { drawEncodedImage } from "./bitmap.js";
+import { drawEncodedImage, measureEncodedImage } from "./bitmap.js";
 
 type NativeImageFormat = "png" | "jpeg" | "gif" | "webp" | "bmp";
 
@@ -15,6 +16,8 @@ interface NativeHandle {
   readonly kind: "native";
   readonly format: NativeImageFormat;
   readonly data: Uint8Array;
+  /** Natural size when the browser could decode the image at open time. */
+  readonly size: PageSize | undefined;
   readonly warnings: readonly ViewerWarning[];
 }
 
@@ -92,10 +95,13 @@ export class ImageDocumentAdapter implements DocumentAdapter<ImageHandle> {
     }
     const format = context.format as NativeImageFormat;
     const animated = isAnimated(data, format);
+    const size = await measureNativeImage(data, format);
+    if (context.signal.aborted) throw abortError();
     return {
       kind: "native",
       format,
       data,
+      size,
       warnings: animated
         ? [
             {
@@ -110,10 +116,12 @@ export class ImageDocumentAdapter implements DocumentAdapter<ImageHandle> {
   }
 
   async getInfo(handle: ImageHandle): Promise<DocumentInfo> {
+    const pageSizes = pageSizesOf(handle);
     return {
       format: handle.format,
       unit: "image",
       pageCount: handle.kind === "tiff" ? handle.backend.pages.length : 1,
+      ...(pageSizes ? { pageSizes } : {}),
       warnings: handle.warnings,
     };
   }
@@ -322,6 +330,34 @@ function requestWorker(
     worker.addEventListener("error", onError);
     worker.postMessage(payload, transfer);
   });
+}
+
+/**
+ * Natural page geometry for the viewport layout and fit modes. Without it the
+ * viewport falls back to a letter-sized page, so fit-to-width scales a photo
+ * against a size it does not have and the bitmap overflows its slot.
+ */
+function pageSizesOf(handle: ImageHandle): readonly PageSize[] | undefined {
+  if (handle.kind === "tiff")
+    return handle.backend.pages.map(({ width, height }) => ({ width, height }));
+  return handle.size ? [handle.size] : undefined;
+}
+
+/**
+ * Read the natural size once at open time. A decode failure is not fatal here:
+ * the render path reports it with its own error, and the viewport keeps its
+ * fallback geometry until then.
+ */
+async function measureNativeImage(
+  data: Uint8Array,
+  format: NativeImageFormat,
+): Promise<PageSize | undefined> {
+  try {
+    const { width, height } = await measureEncodedImage(data, mimeType(format));
+    return width > 0 && height > 0 ? { width, height } : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function mimeType(format: NativeImageFormat): string {

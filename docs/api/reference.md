@@ -79,7 +79,10 @@ render unit, count, optional sheet geometry/warnings, and capabilities
 (`textSelection`, `cellSelection`, `search`, and `thumbnails`). Page-oriented
 backends may also return `pageSizes`, an ordered `{ width, height }[]` in natural
 CSS pixels at zoom 1; the managed viewport uses it for mixed-size PDF and Office
-documents instead of coercing every page to A4.
+documents instead of coercing every page to A4. The image adapter reports the
+decoded bitmap size (TIFF per page) and the SVG adapter the root
+`width`/`height` or `viewBox`, so fit-to-width and fit-to-page scale a picture
+against its own geometry.
 
 ## View and navigation
 

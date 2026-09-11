@@ -209,7 +209,11 @@ describe("image adapter", () => {
   it("uses native browser decoding for raster images", async () => {
     const adapter = new ImageDocumentAdapter();
     const handle = await adapter.open(png(2, 3), context("png"));
-    assert.equal((await adapter.getInfo(handle)).pageCount, 1);
+    const info = await adapter.getInfo(handle);
+    assert.equal(info.pageCount, 1);
+    // The decoded size feeds the viewport layout and fit modes; without it
+    // fit-to-width would scale the bitmap against a letter-sized fallback.
+    assert.deepEqual(info.pageSizes, [{ width: 2, height: 3 }]);
     await adapter.render(handle, fakeCanvas(), {
       pageIndex: 0,
       zoom: 2,
@@ -235,7 +239,12 @@ describe("image adapter", () => {
       Uint8Array.of(0x49, 0x49, 0x2a, 0),
       context("tiff"),
     );
-    assert.equal((await adapter.getInfo(handle)).pageCount, 2);
+    const info = await adapter.getInfo(handle);
+    assert.equal(info.pageCount, 2);
+    assert.deepEqual(info.pageSizes, [
+      { width: 2, height: 3 },
+      { width: 4, height: 5 },
+    ]);
     await adapter.render(handle, fakeCanvas(), {
       pageIndex: 1,
       zoom: 1,
@@ -243,6 +252,56 @@ describe("image adapter", () => {
     });
     await adapter.close(handle);
     assert.equal(closed, 1);
+  });
+});
+
+describe("image natural size", () => {
+  it("opens without a page size when the browser cannot decode the image", async () => {
+    const decoder = globalThis.createImageBitmap;
+    Object.defineProperty(globalThis, "createImageBitmap", {
+      configurable: true,
+      value: async () => {
+        throw new Error("unsupported");
+      },
+    });
+    try {
+      const adapter = new ImageDocumentAdapter();
+      const handle = await adapter.open(png(2, 3), context("png"));
+      assert.equal((await adapter.getInfo(handle)).pageSizes, undefined);
+    } finally {
+      Object.defineProperty(globalThis, "createImageBitmap", {
+        configurable: true,
+        value: decoder,
+      });
+    }
+  });
+
+  it("reads the SVG intrinsic size from width/height, units, or viewBox", async () => {
+    const sizeOf = async (root: string) => {
+      const adapter = new SvgDocumentAdapter();
+      const handle = await adapter.open(
+        new TextEncoder().encode(
+          `<svg xmlns="http://www.w3.org/2000/svg" ${root}><rect/></svg>`,
+        ),
+        context("svg"),
+      );
+      return (await adapter.getInfo(handle)).pageSizes;
+    };
+    assert.deepEqual(await sizeOf('width="300" height="150px"'), [
+      { width: 300, height: 150 },
+    ]);
+    assert.deepEqual(await sizeOf('width="72pt" height="1in"'), [
+      { width: 96, height: 96 },
+    ]);
+    assert.deepEqual(await sizeOf('viewBox="0 0 800 600"'), [
+      { width: 800, height: 600 },
+    ]);
+    assert.deepEqual(await sizeOf('width="400" viewBox="0,0,800,600"'), [
+      { width: 400, height: 300 },
+    ]);
+    // Relative units cannot become CSS pixels; no size beats a wrong one.
+    assert.equal(await sizeOf('width="100%" height="100%"'), undefined);
+    assert.equal(await sizeOf(""), undefined);
   });
 });
 
