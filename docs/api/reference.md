@@ -43,17 +43,18 @@ await viewer.load(file, { fileName: file.name });
 
 ### `ViewerOptions`
 
-| Option         | Default         | Meaning                                                                                         |
-| -------------- | --------------- | ----------------------------------------------------------------------------------------------- |
-| `container`    | none            | `HTMLElement` receiving the managed viewport; omit for headless use.                            |
-| `layout`       | `"continuous"`  | Continuous virtual list or one visible unit with `"single"`.                                    |
-| `overscan`     | `1`             | Extra units on either side of the visible range, clamped to `0…5`.                              |
-| `initialZoom`  | `1`             | Initial scale, clamped to `0.1…8`.                                                              |
-| `fit`          | `"none"`        | Initial `"none"`, `"width"`, or `"page"` fit mode.                                              |
-| `locale`       | `"en"`          | Built-in locale identifier (`"en"` or `"ru"`).                                                  |
-| `ui`           | `false`         | Mount the optional localized toolbar/panels around the viewport.                                |
-| `useWorker`    | adapter default | Compatibility switch for integrations; built-in parsing backends select their safe worker path. |
-| `translations` | none            | Partial locale dictionary override with English fallback.                                       |
+| Option         | Default         | Meaning                                                                                                       |
+| -------------- | --------------- | ------------------------------------------------------------------------------------------------------------- |
+| `container`    | none            | `HTMLElement` receiving the managed viewport; omit for headless use.                                          |
+| `layout`       | `"continuous"`  | Continuous virtual list or one visible unit with `"single"`.                                                  |
+| `overscan`     | `1`             | Extra units on either side of the visible range, clamped to `0…5`.                                            |
+| `initialZoom`  | `1`             | Initial scale, clamped to `0.1…8`.                                                                            |
+| `fit`          | `"none"`        | Initial `"none"`, `"width"`, or `"page"` fit mode.                                                            |
+| `locale`       | `"en"`          | Built-in locale identifier (`"en"` or `"ru"`).                                                                |
+| `ui`           | `false`         | Mount the optional localized toolbar/panels around the viewport.                                              |
+| `useWorker`    | adapter default | Compatibility switch for integrations; built-in parsing backends select their safe worker path.               |
+| `translations` | none            | Partial locale dictionary override with English fallback.                                                     |
+| `search`       | none            | Defaults for every `search()` call, currently `{ fuzzy }`; see [Search and selection](#search-and-selection). |
 
 The host must give the container a resolvable height. The viewport fills its container and removes all DOM/listeners during `destroy()`.
 
@@ -112,9 +113,23 @@ The optional controls, shortcuts, localization, and CSS variables are documented
 
 ## Search and selection
 
-`search(query, { caseSensitive?, pageRange? })` searches logical text in page order. The default applies Unicode NFKC normalization and locale-independent case folding while mapping matches back to original UTF-16 offsets. It does not strip Arabic diacritics or reorder RTL text.
+`search(query, { caseSensitive?, pageRange?, nearPage?, fuzzy? })` searches logical text in page order. The default applies Unicode NFKC normalization and locale-independent case folding while mapping matches back to original UTF-16 offsets. It does not strip Arabic diacritics or reorder RTL text.
 
 `pageRange` is an inclusive 0-based `[first, last]` window. It bounds both the pages whose text is read and the matches the result carries, so a caller that already knows where a passage lives — a citation with a page number, for example — highlights only that page instead of every incidental match in the document, and reads one page of text instead of all of them. Endpoint order does not matter; an out-of-range endpoint rejects with `render-failed` and leaves the standing result and its highlights untouched.
+
+`nearPage` is an approximate 0-based page hint for callers whose page numbers come from another pagination of the same file (a citation produced from a server-side render, while the viewer paginates DOCX itself). It is clamped into the scanned window rather than rejected. The result's `activeIndex` — and the page the viewer navigates to — becomes the match closest to the hint, and the fuzzy fallback scans pages nearest to it first.
+
+`fuzzy` enables a fallback that runs only when the exact search finds nothing. Matching is delegated to [Fuse.js](https://www.fusejs.io/): the query is compared to each page's text with a bounded edit budget, so spacing, line breaks, list bullets, table separators and typographic punctuation may differ from the source, and every hit is mapped back to the verbatim page text so highlights land on the original. Pages are compared nearest to `nearPage` first, a batch at a time, and the scan stops at the first batch that holds the passage. `true` uses the viewer's defaults (`ViewerOptions.search.fuzzy`, so an integration can turn it on once at `createViewer`), an object enables it and overrides them, `false` disables it for one call:
+
+| Option              | Default | Meaning                                                                                                             |
+| ------------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| `threshold`         | `0.3`   | Fuse.js edit budget per 32-character chunk of the query, `0` exact to `1` anything.                                 |
+| `maxScore`          | `0.4`   | Highest Fuse.js score a page may have to count (`0` perfect); raise it to accept a passage that spans a page break. |
+| `maxQueryLength`    | `2000`  | Query characters considered.                                                                                        |
+| `maxPageTextLength` | `20000` | Characters of each page's text considered.                                                                          |
+| `pagesPerBatch`     | `4`     | Pages compared per batch; the viewer yields to the event loop between batches.                                      |
+
+`SearchResult.strategy` reports how the matches were found (`exact` or `fuzzy`) and is absent when there are none. A fuzzy result carries one match per page, spanning the passage from its first to its last matched character.
 
 ```ts
 const result = await viewer.search("привет");
@@ -123,7 +138,7 @@ viewer.searchPrevious();
 viewer.clearSearch();
 ```
 
-`SearchResult` contains the original query, immutable `{ pageIndex, start, end, text }` matches, and `activeIndex` (`-1` when empty). Starting a new search cancels an earlier one.
+`SearchResult` contains the original query, immutable `{ pageIndex, start, end, text }` matches, `activeIndex` (`-1` when empty), and `strategy`. Starting a new search cancels an earlier one.
 
 Use `selectText({ startPageIndex, startOffset, endPageIndex, endOffset })` for logical cross-page ranges. Use `selectCells({ sheetIndex, startRow, startColumn, endRow, endColumn })` for one spreadsheet range or `selectCellRanges(ranges)` for a non-contiguous selection; merged cells expand the returned ranges. `copySelection()` writes to the Clipboard API when permission is available and always resolves to the deterministic text/TSV value. Multi-range TSV is emitted in row-major order, with tabs preserving gaps between selected cells on the same row. `getSelection()` and `clearSelection()` expose the current model.
 

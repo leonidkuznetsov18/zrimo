@@ -10,6 +10,7 @@ import type {
   ResourceLimits,
   SearchMatch,
   SearchOptions,
+  SearchStrategy,
   SearchResult,
   SpreadsheetViewportRange,
   TextRun,
@@ -33,6 +34,12 @@ import {
   findNormalizedMatches,
   normalizeCellRange,
 } from "./interaction.js";
+import {
+  findFuzzyPageMatches,
+  nearestMatchIndex,
+  pagesNearestFirst,
+  resolveFuzzySearchOptions,
+} from "./fuzzy-search.js";
 import { enforceContainerLimits, resolveLimits } from "./limits.js";
 import type { AdapterRegistry } from "./registry.js";
 import { loadDocumentSource } from "./source.js";
@@ -534,6 +541,12 @@ export class DocumentViewer implements ViewerApi {
       info.pageCount,
       options.pageRange,
     );
+    const nearPage = resolveNearPage(firstPage, lastPage, options.nearPage);
+    const fuzzy = resolveFuzzySearchOptions(
+      this.#options.search?.fuzzy,
+      options.fuzzy,
+    );
+    const caseSensitive = options.caseSensitive ?? false;
     this.#activeSearch?.abort();
     const controller = new AbortController();
     this.#activeSearch = controller;
@@ -544,24 +557,48 @@ export class DocumentViewer implements ViewerApi {
       return immutableSearchResult({ query, matches: [], activeIndex: -1 });
     }
     const matches: SearchMatch[] = [];
+    let strategy: SearchStrategy = "exact";
     try {
+      const texts = new Map<number, string>();
       for (let pageIndex = firstPage; pageIndex <= lastPage; pageIndex += 1) {
         if (controller.signal.aborted) throw abortError();
         const text = await this.getPageText(pageIndex, controller.signal);
+        texts.set(pageIndex, text);
         matches.push(
-          ...findNormalizedMatches(
-            text,
-            cleanQuery,
-            pageIndex,
-            options.caseSensitive ?? false,
-          ),
+          ...findNormalizedMatches(text, cleanQuery, pageIndex, caseSensitive),
         );
+      }
+      if (matches.length === 0 && fuzzy) {
+        // The page texts are already in memory, so the fallback is CPU only.
+        // Pages are compared nearest to the hint first, a batch at a time,
+        // and the scan stops at the first batch that holds the passage; a
+        // yield between batches keeps a long document from freezing the UI.
+        const order = pagesNearestFirst(firstPage, lastPage, nearPage);
+        for (
+          let offset = 0;
+          offset < order.length && matches.length === 0;
+          offset += fuzzy.pagesPerBatch
+        ) {
+          if (offset > 0) await yieldToEventLoop();
+          if (controller.signal.aborted) throw abortError();
+          const batch = order
+            .slice(offset, offset + fuzzy.pagesPerBatch)
+            .map((pageIndex) => ({
+              pageIndex,
+              text: texts.get(pageIndex) ?? "",
+            }));
+          matches.push(
+            ...findFuzzyPageMatches(batch, cleanQuery, fuzzy, caseSensitive),
+          );
+        }
+        if (matches.length > 0) strategy = "fuzzy";
       }
       if (generation !== this.#searchGeneration) throw abortError();
       const result = immutableSearchResult({
         query,
         matches,
-        activeIndex: matches.length > 0 ? 0 : -1,
+        activeIndex: nearestMatchIndex(matches, nearPage),
+        ...(matches.length > 0 ? { strategy } : {}),
       });
       this.#searchResult = result;
       if (result.activeIndex >= 0)
@@ -1013,6 +1050,24 @@ function resolveSearchPageRange(
   assertPageIndex(first, pageCount);
   assertPageIndex(last, pageCount);
   return first <= last ? [first, last] : [last, first];
+}
+
+/**
+ * Clamp the approximate page hint into the scanned window. A hint that comes
+ * from another pagination of the same file is allowed to overshoot; rejecting
+ * it would defeat its purpose.
+ */
+function resolveNearPage(
+  firstPage: number,
+  lastPage: number,
+  nearPage: number | undefined,
+): number | undefined {
+  if (nearPage === undefined || !Number.isFinite(nearPage)) return undefined;
+  return Math.min(lastPage, Math.max(firstPage, Math.trunc(nearPage)));
+}
+
+function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 function assertPageIndex(pageIndex: number, pageCount: number): void {

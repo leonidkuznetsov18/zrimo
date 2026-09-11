@@ -9,7 +9,8 @@
 
 > web-doc is a fork of [Zrimo](https://github.com/bnku/zrimo) maintained at
 > [leonidkuznetsov18/web-doc](https://github.com/leonidkuznetsov18/web-doc).
-> It adds page-scoped search (`SearchOptions.pageRange`) and is released
+> It adds page-scoped search (`SearchOptions.pageRange`), an approximate page
+> hint with a fuzzy fallback (`SearchOptions.nearPage` / `fuzzy`) and is released
 > independently; the runtime API, CSS hooks (`.zrimo-ui`, `--zrimo-*`) and
 > asset layout are the same as upstream's `@zrimo/viewer`.
 

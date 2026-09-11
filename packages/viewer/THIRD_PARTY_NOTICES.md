@@ -4,6 +4,7 @@ The release artifact contains or depends on the following principal components. 
 
 - [`@silurus/ooxml`](https://github.com/yukiyokotani/office-open-xml-viewer) — MIT; modern Office parsing/rendering.
 - [`office_oxide`](https://github.com/yfedoseev/office_oxide) — MIT OR Apache-2.0; compound-file handling, Office IR/writer utilities and legacy XLS/PPT conversion.
+- [`Fuse.js`](https://github.com/krisk/Fuse) — Apache-2.0; fuzzy matching behind the opt-in `search()` fallback.
 - [`pdfjs-dist` / Mozilla PDF.js](https://github.com/mozilla/pdf.js) — Apache-2.0; browser PDF parsing,
   font/CMap handling, canvas rendering, and text extraction. The packaged
   standard-font, ICC, CMap, OpenJPEG, JBIG2, and QCMS assets retain the license

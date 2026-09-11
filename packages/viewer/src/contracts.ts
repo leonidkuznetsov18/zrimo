@@ -194,6 +194,7 @@ export interface ViewerOptions {
   readonly layout?: "continuous" | "single";
   readonly overscan?: number;
   readonly translations?: Partial<ViewerTranslations>;
+  readonly search?: SearchDefaults;
 }
 
 export interface ViewerClientOptions {
@@ -304,6 +305,37 @@ export interface ViewerEventMap {
   readonly searchchange: SearchResult | null;
 }
 
+/**
+ * Tuning for the fuzzy fallback that runs when the exact search finds
+ * nothing. Matching is delegated to Fuse.js: the query is compared to each
+ * page's text with a bounded edit budget, so spacing, line breaks, list
+ * bullets, table separators and typographic punctuation may differ from the
+ * source, and every hit maps back to the verbatim page text.
+ */
+export interface FuzzySearchOptions {
+  /**
+   * Fuse.js `threshold`: the edit budget per 32-character chunk of the query,
+   * `0` exact to `1` anything. Default `0.3`.
+   */
+  readonly threshold?: number;
+  /**
+   * Highest Fuse.js score (`0` perfect, `1` no resemblance) a page may have to
+   * count as a match. Default `0.4`; raise it to accept a passage that only
+   * partly survives on a page, such as a citation that spans a page break.
+   */
+  readonly maxScore?: number;
+  /** Query characters considered. Default `2000`. */
+  readonly maxQueryLength?: number;
+  /** Characters of each page's text considered. Default `20000`. */
+  readonly maxPageTextLength?: number;
+  /**
+   * Pages compared per batch. The scan proceeds nearest to `nearPage` first
+   * and stops after the first batch with a match, yielding to the event loop
+   * between batches. Default `4`.
+   */
+  readonly pagesPerBatch?: number;
+}
+
 export interface SearchOptions {
   readonly caseSensitive?: boolean;
   /**
@@ -313,6 +345,25 @@ export interface SearchOptions {
    * is rejected.
    */
   readonly pageRange?: readonly [number, number];
+  /**
+   * Approximate 0-based page the passage is expected on, for callers whose
+   * page numbers come from another pagination (a citation produced from a
+   * server-side render of the same file). Clamped to the document. The
+   * result's `activeIndex` becomes the match closest to it, and the fuzzy
+   * fallback scans pages nearest to it first.
+   */
+  readonly nearPage?: number;
+  /**
+   * Fall back to Fuse.js fuzzy matching when the exact search finds nothing.
+   * `true` uses the viewer's `search.fuzzy` defaults; an object enables it
+   * and overrides them; `false` disables it for this call.
+   */
+  readonly fuzzy?: boolean | FuzzySearchOptions;
+}
+
+/** Per-viewer defaults applied to every `search()` call. */
+export interface SearchDefaults {
+  readonly fuzzy?: boolean | FuzzySearchOptions;
 }
 
 export interface SearchMatch {
@@ -322,10 +373,15 @@ export interface SearchMatch {
   readonly text: string;
 }
 
+/** How the matches of a result were found. */
+export type SearchStrategy = "exact" | "fuzzy";
+
 export interface SearchResult {
   readonly query: string;
   readonly matches: readonly SearchMatch[];
   readonly activeIndex: number;
+  /** Present when the result has matches. */
+  readonly strategy?: SearchStrategy;
 }
 
 export interface HeadlessRenderOptions {

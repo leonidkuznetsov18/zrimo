@@ -5,6 +5,7 @@ export * from "./errors.js";
 export * from "./format.js";
 export * from "./limits.js";
 export * from "./interaction.js";
+export * from "./fuzzy-search.js";
 export * from "./render-scheduler.js";
 export * from "./i18n.js";
 export * from "./font-manifest.js";
