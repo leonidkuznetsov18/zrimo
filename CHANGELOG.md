@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.0](https://github.com/leonidkuznetsov18/web-doc/compare/v0.3.0...v0.4.0) (2026-09-12)
+
+### Features
+
+* **viewer:** fuzzy search with an approximate page hint ([b4ebb38](https://github.com/leonidkuznetsov18/web-doc/commit/b4ebb38b573e4f6e7163422dcec01ea78ce0a891))
+
+### Bug fixes
+
+* **viewer:** expose natural page sizes for images and svg ([5713392](https://github.com/leonidkuznetsov18/web-doc/commit/5713392ae8e303d2ad4dfe6c28de26a8de9c2254))
+
 ## [0.3.0](https://github.com/leonidkuznetsov18/web-doc/compare/v0.2.0...v0.3.0) (2026-09-08)
 
 ### Features
