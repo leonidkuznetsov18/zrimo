@@ -67,6 +67,7 @@ const required = [
   "dist/styles.css",
   "dist/workers/pdf.worker.min.mjs",
   "dist/workers/image-worker.js",
+  "dist/workers/fuzzy-search-worker.js",
   "dist/workers/legacy-converter-worker.js",
   "dist/assets/pdfjs/cmaps/Adobe-CNS1-UCS2.bcmap",
   "dist/assets/pdfjs/standard_fonts/LiberationSans-Regular.ttf",

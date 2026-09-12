@@ -345,6 +345,13 @@ export interface FuzzySearchOptions {
    * hint every page in range is scanned. Default `12`.
    */
   readonly pageWindow?: number;
+  /**
+   * Run the matcher in a Web Worker that keeps the document's index, so a
+   * long scan never blocks the page and repeated citation lookups reuse the
+   * index. Falls back to the main thread where workers are unavailable or
+   * the worker script cannot be loaded. Default `true`.
+   */
+  readonly worker?: boolean;
 }
 
 export interface SearchOptions {

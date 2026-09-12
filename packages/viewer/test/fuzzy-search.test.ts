@@ -119,6 +119,7 @@ describe("option layering and ordering helpers", () => {
       maxPageTextLength: 20_000,
       pagesPerBatch: 2,
       pageWindow: 12,
+      worker: true,
     });
   });
 

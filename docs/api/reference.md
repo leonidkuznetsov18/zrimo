@@ -126,13 +126,17 @@ The optional controls, shortcuts, localization, and CSS variables are documented
 
 `fuzzy` enables a fallback that runs only when the exact search finds nothing. Matching is delegated to [Fuse.js](https://www.fusejs.io/): the query is compared to each page's text with a bounded edit budget, so spacing, line breaks, list bullets, table separators and typographic punctuation may differ from the source, and every hit is mapped back to the verbatim page text so highlights land on the original. Pages are compared nearest to `nearPage` first, a batch at a time, and the scan stops at the first batch that holds the passage. `true` uses the viewer's defaults (`ViewerOptions.search.fuzzy`, so an integration can turn it on once at `createViewer`), an object enables it and overrides them, `false` disables it for one call:
 
-| Option              | Default | Meaning                                                                                                             |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
-| `threshold`         | `0.3`   | Fuse.js edit budget per 32-character chunk of the query, `0` exact to `1` anything.                                 |
-| `maxScore`          | `0.4`   | Highest Fuse.js score a page may have to count (`0` perfect); raise it to accept a passage that spans a page break. |
-| `maxQueryLength`    | `2000`  | Query characters considered.                                                                                        |
-| `maxPageTextLength` | `20000` | Characters of each page's text considered.                                                                          |
-| `pagesPerBatch`     | `4`     | Pages compared per batch; the viewer yields to the event loop between batches.                                      |
+| Option              | Default | Meaning                                                                                                               |
+| ------------------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
+| `threshold`         | `0.3`   | Fuse.js edit budget per 32-character chunk of the query, `0` exact to `1` anything.                                   |
+| `maxScore`          | `0.4`   | Highest Fuse.js score a page may have to count (`0` perfect); raise it to accept a passage that spans a page break.   |
+| `maxQueryLength`    | `600`   | Query characters considered; the matcher's cost grows with the query and a passage is identified well before its end. |
+| `maxPageTextLength` | `20000` | Characters of each page's text considered.                                                                            |
+| `pagesPerBatch`     | `2`     | Main-thread fallback only: pages compared per batch, yielding to the event loop between batches.                      |
+| `pageWindow`        | `12`    | With `nearPage`, how many pages nearest to the hint are scanned before giving up; without a hint every page is.       |
+| `worker`            | `true`  | Match in a Web Worker that keeps the document's Fuse.js index; falls back to the main thread when unavailable.        |
+
+With `worker` on, the first fuzzy search of a document ships its page texts to `workers/fuzzy-search-worker.js` (served next to the other worker assets), which builds one Fuse.js index and answers every later search off the main thread — a citation lookup tries several anchors in a row, and a long document never blocks the page while they run. A worker that cannot start (no `Worker`, a missing asset) is logged through `ViewerLogger.warn` and the main-thread matcher takes over for the rest of the document's life.
 
 `SearchResult.strategy` reports how the matches were found (`exact` or `fuzzy`) and is absent when there are none.
 
