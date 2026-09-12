@@ -145,6 +145,47 @@ describe("OfficeDocumentAdapter", () => {
     assert.equal(destroyed, 1);
   });
 
+  it("fits oversized inline DOCX pictures to the page before the engine paginates", async () => {
+    const picture = {
+      type: "image",
+      widthPt: 1536,
+      heightPt: 864,
+      anchor: false,
+    };
+    let pagesReadAfterFit = false;
+    const adapter = new OfficeDocumentAdapter({
+      engines: {
+        docx: async () => ({
+          mode: "main" as const,
+          document: {
+            section: {
+              pageWidth: 612,
+              pageHeight: 792,
+              marginLeft: 72,
+              marginRight: 72,
+              marginTop: 72,
+              marginBottom: 72,
+            },
+            body: [{ type: "paragraph", runs: [picture] }],
+          },
+          get pageCount() {
+            // The layout is built on first access, which must see the fitted size.
+            pagesReadAfterFit = picture.widthPt === 468;
+            return 1;
+          },
+          pageSize: () => ({ widthPt: 612, heightPt: 792 }),
+          renderPage: async () => {},
+          collectPageRuns: async () => [],
+          destroy: () => {},
+        }),
+      },
+    });
+    const handle = await adapter.open(Uint8Array.of(1), context("docx"));
+    assert.equal((await adapter.getInfo(handle)).pageCount, 1);
+    assert.equal(picture.widthPt, 468);
+    assert.equal(pagesReadAfterFit, true);
+  });
+
   it("normalizes presentations and resolves internal slide links", async () => {
     const adapter = new OfficeDocumentAdapter({
       engines: {
