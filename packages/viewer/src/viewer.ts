@@ -573,7 +573,12 @@ export class DocumentViewer implements ViewerApi {
         // Pages are compared nearest to the hint first, a batch at a time,
         // and the scan stops at the first batch that holds the passage; a
         // yield between batches keeps a long document from freezing the UI.
-        const order = pagesNearestFirst(firstPage, lastPage, nearPage);
+        // With a hint the passage sits near it, so only that neighbourhood is
+        // worth the fuzzy cost; without one every page is a candidate.
+        const order = pagesNearestFirst(firstPage, lastPage, nearPage).slice(
+          0,
+          nearPage === undefined ? undefined : fuzzy.pageWindow,
+        );
         for (
           let offset = 0;
           offset < order.length && matches.length === 0;
@@ -602,7 +607,7 @@ export class DocumentViewer implements ViewerApi {
       });
       this.#searchResult = result;
       if (result.activeIndex >= 0)
-        this.#goToPage(result.matches[result.activeIndex]!.pageIndex, true);
+        this.#revealSearchMatch(result.matches[result.activeIndex]!);
       this.#emit("searchchange", result);
       this.#viewport?.update();
       return result;
@@ -887,10 +892,16 @@ export class DocumentViewer implements ViewerApi {
       current.matches.length;
     const result = immutableSearchResult({ ...current, activeIndex });
     this.#searchResult = result;
-    this.#goToPage(result.matches[activeIndex]!.pageIndex, true);
+    this.#revealSearchMatch(result.matches[activeIndex]!);
     this.#emit("searchchange", result);
     this.#viewport?.update();
     return result;
+  }
+
+  /** Land on the match's page, then bring the match itself into view. */
+  #revealSearchMatch(match: SearchMatch): void {
+    this.#goToPage(match.pageIndex, true);
+    void this.#viewport?.revealMatch(match);
   }
 
   #goToPage(pageIndex: number, scrollViewport: boolean): void {

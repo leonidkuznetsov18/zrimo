@@ -324,16 +324,27 @@ export interface FuzzySearchOptions {
    * partly survives on a page, such as a citation that spans a page break.
    */
   readonly maxScore?: number;
-  /** Query characters considered. Default `2000`. */
+  /**
+   * Query characters considered. The matcher's cost grows with the query and
+   * a passage is identified well before its end, so the default `600` keeps
+   * a page under about 100 ms; the highlight covers the matched prefix.
+   */
   readonly maxQueryLength?: number;
   /** Characters of each page's text considered. Default `20000`. */
   readonly maxPageTextLength?: number;
   /**
    * Pages compared per batch. The scan proceeds nearest to `nearPage` first
    * and stops after the first batch with a match, yielding to the event loop
-   * between batches. Default `4`.
+   * between batches. Default `2`.
    */
   readonly pagesPerBatch?: number;
+  /**
+   * With `nearPage`, how many pages nearest to the hint the fallback scans
+   * before giving up; the passage a hint points at sits within a few pages
+   * of it, and the rest of a long document is not worth the cost. Without a
+   * hint every page in range is scanned. Default `12`.
+   */
+  readonly pageWindow?: number;
 }
 
 export interface SearchOptions {

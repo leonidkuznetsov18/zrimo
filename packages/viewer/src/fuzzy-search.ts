@@ -16,15 +16,19 @@ export interface ResolvedFuzzySearchOptions {
   readonly maxQueryLength: number;
   readonly maxPageTextLength: number;
   readonly pagesPerBatch: number;
+  readonly pageWindow: number;
 }
 
 export const DEFAULT_FUZZY_SEARCH_OPTIONS: ResolvedFuzzySearchOptions =
   Object.freeze({
     threshold: 0.3,
     maxScore: 0.4,
-    maxQueryLength: 2000,
+    // Bitap cost grows with the query; 600 characters still identifies a
+    // passage while keeping a page under ~100 ms on a laptop.
+    maxQueryLength: 600,
     maxPageTextLength: 20_000,
-    pagesPerBatch: 4,
+    pagesPerBatch: 2,
+    pageWindow: 12,
   });
 
 /**
@@ -60,6 +64,7 @@ export function resolveFuzzySearchOptions(
         layer.pagesPerBatch,
         resolved.pagesPerBatch,
       ),
+      pageWindow: positiveInteger(layer.pageWindow, resolved.pageWindow),
     };
   }
   return enabled ? resolved : undefined;

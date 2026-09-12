@@ -115,9 +115,10 @@ describe("option layering and ordering helpers", () => {
     assert.deepEqual(resolved, {
       threshold: 0.5,
       maxScore: 0.6,
-      maxQueryLength: 2000,
+      maxQueryLength: 600,
       maxPageTextLength: 20_000,
-      pagesPerBatch: 4,
+      pagesPerBatch: 2,
+      pageWindow: 12,
     });
   });
 
@@ -226,6 +227,14 @@ describe("viewer search with a page hint and fuzzy fallback", () => {
       pageRange: [0, 2],
     });
     assert.equal(scoped.matches.length, 0);
+
+    // The page window bounds the fuzzy scan around the hint: page 3 holds
+    // the phrase but sits outside a one-page window around page 0.
+    const windowed = await viewer.search("agentic   mindset restated", {
+      fuzzy: { pageWindow: 1 },
+      nearPage: 0,
+    });
+    assert.equal(windowed.matches.length, 0);
   });
 });
 

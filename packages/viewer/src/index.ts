@@ -6,6 +6,8 @@ export * from "./format.js";
 export * from "./limits.js";
 export * from "./interaction.js";
 export * from "./fuzzy-search.js";
+export * from "./search-reveal.js";
+export * from "./adapters/docx-images.js";
 export * from "./render-scheduler.js";
 export * from "./i18n.js";
 export * from "./font-manifest.js";

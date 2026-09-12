@@ -85,6 +85,11 @@ decoded bitmap size (TIFF per page) and the SVG adapter the root
 `width`/`height` or `viewBox`, so fit-to-width and fit-to-page scale a picture
 against its own geometry.
 
+An inline DOCX picture declared wider or taller than its section's text area
+(a generated document often embeds a chart at its native size) is scaled down
+to fit before the page layout runs, aspect ratio preserved; Word would draw it
+clipped at the page edge. Anchored (floating) pictures keep their geometry.
+
 ## View and navigation
 
 | Method                     | Behavior                                                                            |
@@ -129,7 +134,9 @@ The optional controls, shortcuts, localization, and CSS variables are documented
 | `maxPageTextLength` | `20000` | Characters of each page's text considered.                                                                          |
 | `pagesPerBatch`     | `4`     | Pages compared per batch; the viewer yields to the event loop between batches.                                      |
 
-`SearchResult.strategy` reports how the matches were found (`exact` or `fuzzy`) and is absent when there are none. A fuzzy result carries one match per page, spanning the passage from its first to its last matched character.
+`SearchResult.strategy` reports how the matches were found (`exact` or `fuzzy`) and is absent when there are none.
+
+A search, `searchNext()` and `searchPrevious()` land on the active match itself, not only on its page: once the page's text runs are known the viewport scrolls so the match sits about a third of the way down, so a hit low on a page taller than the viewport is visible without a manual scroll. A fuzzy result carries one match per page, spanning the passage from its first to its last matched character.
 
 ```ts
 const result = await viewer.search("привет");
