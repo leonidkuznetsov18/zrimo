@@ -62,6 +62,10 @@ export default {
     [
       "@semantic-release/github",
       {
+        // The repository has issues disabled, so the plugin's "release failed"
+        // issue cannot be created; the workflow log is the failure report.
+        failComment: false,
+        failTitle: false,
         assets: [
           {
             path: ".cache/pack-test/web-doc-*.tgz",

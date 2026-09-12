@@ -40,6 +40,11 @@ jobs:
           # Optional: with a granular npm token the release is also published to
           # npmjs.org (with provenance); without it only the GitHub release ships.
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # setup-node's registry-url writes an .npmrc that reads the token from
+          # NODE_AUTH_TOKEN and fills in a placeholder when it is unset; that
+          # placeholder shadowed NPM_TOKEN, so `npm whoami` failed with
+          # EINVALIDNPMTOKEN and no release shipped.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
         run: >-
           npx --yes
