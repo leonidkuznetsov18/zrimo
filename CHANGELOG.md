@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.0](https://github.com/leonidkuznetsov18/web-doc/compare/v0.5.0...v0.6.0) (2026-09-12)
+
+### Features
+
+* **viewer:** match fuzzy searches in a worker over a document index ([2870dac](https://github.com/leonidkuznetsov18/web-doc/commit/2870dacf6f1c32d1d3fabe39f2ba64f06b1c4988))
+
 ## [0.5.0](https://github.com/leonidkuznetsov18/web-doc/compare/v0.4.0...v0.5.0) (2026-09-12)
 
 ### Features
