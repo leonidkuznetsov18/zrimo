@@ -302,6 +302,9 @@ export class SpreadsheetViewport {
     this.schedule();
   }
 
+  /** Sheet matches are cell-addressed; the sheet viewport scrolls per cell already. */
+  async revealMatch(): Promise<void> {}
+
   goToPage(pageIndex: number): void {
     if (pageIndex === this.#sheetIndex) return;
     this.update();

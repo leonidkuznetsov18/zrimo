@@ -10,6 +10,7 @@ import type {
   ViewerWarning,
 } from "../contracts.js";
 import { abortError, ViewerError } from "../errors.js";
+import { fitInlineImagesToPage, type DocxModelLike } from "./docx-images.js";
 import { enforceContainerLimits } from "../limits.js";
 
 const MODERN_FORMATS = [
@@ -60,6 +61,10 @@ interface DocxRun {
 
 interface DocxBackend {
   readonly pageCount: number;
+  /** Render mode; the parsed model is only reachable in `main` mode. */
+  readonly mode?: "main" | "worker";
+  /** Parsed document model (main mode). Read lazily by the page layout. */
+  readonly document?: DocxModelLike;
   pageSize(pageIndex: number): { widthPt: number; heightPt: number };
   renderPage(
     target: HTMLCanvasElement | OffscreenCanvas,
@@ -636,10 +641,13 @@ export class OfficeDocumentAdapter implements DocumentAdapter<OfficeHandle> {
     data: ArrayBuffer,
     options: EngineLoadOptions,
   ): Promise<DocxBackend> {
-    if (this.#options.engines?.docx)
-      return this.#options.engines.docx(data, options);
-    const { DocxDocument } = await import("@silurus/ooxml/docx");
-    return DocxDocument.load(data, options);
+    const backend = this.#options.engines?.docx
+      ? await this.#options.engines.docx(data, options)
+      : await (
+          await import("@silurus/ooxml/docx")
+        ).DocxDocument.load(data, options);
+    fitDocxInlineImages(backend);
+    return backend;
   }
 
   async #loadXlsx(
@@ -1085,4 +1093,21 @@ function normalizeOfficeError(error: unknown): ViewerError {
 
 function textDirection(text: string): "ltr" | "rtl" {
   return /[\u0590-\u08ff\ufb1d-\ufefc]/u.test(text) ? "rtl" : "ltr";
+}
+
+/**
+ * Oversized inline pictures are shrunk to the section's content box before
+ * the engine paginates (the layout is built lazily on first page access).
+ * The model is reachable in `main` mode only; a worker-mode engine keeps
+ * Word's geometry.
+ */
+function fitDocxInlineImages(backend: DocxBackend): void {
+  if (backend.mode === "worker") return;
+  let model: DocxModelLike | undefined;
+  try {
+    model = backend.document;
+  } catch {
+    return;
+  }
+  if (model) fitInlineImagesToPage(model);
 }

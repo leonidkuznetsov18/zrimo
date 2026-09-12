@@ -9,6 +9,7 @@ import type {
   ViewerState,
   SpreadsheetViewportRange,
 } from "./contracts.js";
+import { matchTopInPage, revealScrollTop } from "./search-reveal.js";
 import { snapGraphemeOffset } from "./interaction.js";
 import { SpreadsheetViewport } from "./spreadsheet-viewport.js";
 
@@ -17,6 +18,8 @@ import type { DocxHighlightMatch, DocxTextRunInfo } from "@silurus/ooxml/docx";
 const BASE_WIDTH = 816;
 const BASE_HEIGHT = 1056;
 const PAGE_GAP = 24;
+/** Page slots sit this far inside the spacer (top and left). */
+const SLOT_INSET = 12;
 
 export interface ViewportHost {
   readonly state: ViewerState;
@@ -50,6 +53,7 @@ interface ViewportStrategy {
   update(): void;
   panBy(deltaX: number, deltaY: number): void;
   goToPage(pageIndex: number): void;
+  revealMatch(match: SearchMatch): Promise<void>;
   fitWidth(): number;
   fitPage(): number;
   destroy(): void;
@@ -102,6 +106,10 @@ export class AdaptiveViewport implements ViewportStrategy {
 
   goToPage(pageIndex: number): void {
     this.#strategy.goToPage(pageIndex);
+  }
+
+  revealMatch(match: SearchMatch): Promise<void> {
+    return this.#strategy.revealMatch(match);
   }
 
   fitWidth(): number {
@@ -282,6 +290,34 @@ export class ViewerViewport {
     this.schedule();
   }
 
+  /**
+   * Scroll so the match itself is in view, not just its page: a page can be
+   * taller than the viewport, and a search that only lands on the page top
+   * leaves a match further down invisible until the reader scrolls. Resolves
+   * once the text runs are known; a navigation that happened meanwhile wins.
+   */
+  async revealMatch(match: SearchMatch): Promise<void> {
+    if (this.#layout !== "continuous" || !this.#info) return;
+    let runs: readonly TextRun[];
+    try {
+      runs = await this.#host.getTextRuns(match.pageIndex);
+    } catch {
+      return;
+    }
+    if (this.#destroyed || this.#host.state.pageIndex !== match.pageIndex)
+      return;
+    const top = matchTopInPage(runs, match);
+    if (top === undefined) return;
+    const zoom = this.#host.state.zoom;
+    const metrics = pageMetrics(this.#info, zoom);
+    this.#root.scrollTop = revealScrollTop({
+      pageTop: metrics.offsets[match.pageIndex] ?? 0,
+      matchTop: SLOT_INSET + top * zoom,
+      viewportHeight: this.#root.clientHeight,
+    });
+    this.schedule();
+  }
+
   fitWidth(): number {
     const size = naturalPageSize(this.#info, this.#host.state.pageIndex);
     return Math.max(
@@ -362,7 +398,9 @@ export class ViewerViewport {
       const width = metrics.widths[pageIndex] ?? BASE_WIDTH * state.zoom;
       const height = metrics.heights[pageIndex] ?? BASE_HEIGHT * state.zoom;
       const top =
-        this.#layout === "single" ? 12 : (metrics.offsets[pageIndex] ?? 0) + 12;
+        this.#layout === "single"
+          ? SLOT_INSET
+          : (metrics.offsets[pageIndex] ?? 0) + SLOT_INSET;
       const contentWidth = Math.max(
         this.#root.clientWidth,
         metrics.maxWidth + 24,
