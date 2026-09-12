@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.0](https://github.com/leonidkuznetsov18/web-doc/compare/v0.4.0...v0.5.0) (2026-09-12)
+
+### Features
+
+* **viewer:** reveal the active match and bound the fuzzy scan ([230a3ed](https://github.com/leonidkuznetsov18/web-doc/commit/230a3eda3779957a4ce6275b5467e8a489ca4d09))
+
+### Bug fixes
+
+* **viewer:** fit oversized inline docx pictures to the page ([b0dcc87](https://github.com/leonidkuznetsov18/web-doc/commit/b0dcc8714c6d68ecade8f507413a32b0e2f7eb94))
+
 ## [0.4.0](https://github.com/leonidkuznetsov18/web-doc/compare/v0.3.0...v0.4.0) (2026-09-12)
 
 ### Features
