@@ -1,4 +1,4 @@
-import Fuse from "fuse.js";
+import Fuse, { type FuseIndex, type IFuseOptions } from "fuse.js";
 
 import type { FuzzySearchOptions, SearchMatch } from "./contracts.js";
 
@@ -17,6 +17,7 @@ export interface ResolvedFuzzySearchOptions {
   readonly maxPageTextLength: number;
   readonly pagesPerBatch: number;
   readonly pageWindow: number;
+  readonly worker: boolean;
 }
 
 export const DEFAULT_FUZZY_SEARCH_OPTIONS: ResolvedFuzzySearchOptions =
@@ -29,6 +30,7 @@ export const DEFAULT_FUZZY_SEARCH_OPTIONS: ResolvedFuzzySearchOptions =
     maxPageTextLength: 20_000,
     pagesPerBatch: 2,
     pageWindow: 12,
+    worker: true,
   });
 
 /**
@@ -65,6 +67,7 @@ export function resolveFuzzySearchOptions(
         resolved.pagesPerBatch,
       ),
       pageWindow: positiveInteger(layer.pageWindow, resolved.pageWindow),
+      worker: layer.worker ?? resolved.worker,
     };
   }
   return enabled ? resolved : undefined;
@@ -75,24 +78,12 @@ export interface FuzzyPageText {
   readonly text: string;
 }
 
-/**
- * One match per page whose text holds the query within the edit budget: the
- * span from the first to the last matched character, so the highlight covers
- * the passage as one block. Pages are returned in page order.
- */
-export function findFuzzyPageMatches(
-  pages: readonly FuzzyPageText[],
-  query: string,
-  options: ResolvedFuzzySearchOptions,
-  caseSensitive = false,
-): readonly SearchMatch[] {
-  const pattern = query.slice(0, options.maxQueryLength);
-  if (!pattern.trim()) return [];
-  const items = pages.map((page) => ({
-    pageIndex: page.pageIndex,
-    text: page.text.slice(0, options.maxPageTextLength),
-  }));
-  const fuse = new Fuse(items, {
+/** Fuse.js options shared by every fuzzy scan; `keys` and `threshold` are fixed per index. */
+function fuseOptions(
+  threshold: number,
+  caseSensitive: boolean,
+): IFuseOptions<FuzzyPageText> {
+  return {
     keys: ["text"],
     isCaseSensitive: caseSensitive,
     ignoreDiacritics: false,
@@ -103,25 +94,101 @@ export function findFuzzyPageMatches(
     ignoreLocation: true,
     // Long page text must not dilute the score of a match inside it.
     ignoreFieldNorm: true,
-    threshold: options.threshold,
+    threshold,
     minMatchCharLength: 3,
     shouldSort: false,
-  });
-  const matches: SearchMatch[] = [];
-  for (const result of fuse.search(pattern)) {
-    if ((result.score ?? 1) > options.maxScore) continue;
-    const indices = result.matches?.[0]?.indices ?? [];
-    if (indices.length === 0) continue;
-    let start = Number.POSITIVE_INFINITY;
-    let end = 0;
-    for (const [first, last] of indices) {
-      start = Math.min(start, first);
-      end = Math.max(end, last + 1);
-    }
-    const text = result.item.text.slice(start, end);
-    matches.push({ pageIndex: result.item.pageIndex, start, end, text });
+  };
+}
+
+/**
+ * A document's pages, indexed once for Fuse.js so that every fuzzy search
+ * reuses the normalized records instead of rebuilding them: a citation
+ * lookup tries several anchors in a row, and each used to pay for the index
+ * again. A scan restricted to a page window reuses the same records through
+ * `Fuse.parseIndex`, so only the Bitap pass runs for those pages.
+ */
+export class FuzzyPageIndex {
+  readonly #pages: readonly FuzzyPageText[];
+  readonly #index: FuseIndex<FuzzyPageText>;
+  readonly #options: IFuseOptions<FuzzyPageText>;
+  readonly #fuse: Fuse<FuzzyPageText>;
+
+  constructor(
+    pages: readonly FuzzyPageText[],
+    options: { threshold: number; maxPageTextLength: number },
+    caseSensitive = false,
+  ) {
+    this.#pages = pages.map((page) => ({
+      pageIndex: page.pageIndex,
+      text: page.text.slice(0, options.maxPageTextLength),
+    }));
+    this.#options = fuseOptions(options.threshold, caseSensitive);
+    this.#index = Fuse.createIndex(["text"], this.#pages);
+    this.#fuse = new Fuse(this.#pages, this.#options, this.#index);
   }
-  return matches.sort((a, b) => a.pageIndex - b.pageIndex);
+
+  get pageCount(): number {
+    return this.#pages.length;
+  }
+
+  /**
+   * One match per page whose text holds the query within the edit budget:
+   * the span from the first to the last matched character, so the highlight
+   * covers the passage as one block. `pageIndices` restricts the scan; the
+   * result is in page order either way.
+   */
+  search(
+    query: string,
+    maxScore: number,
+    pageIndices?: readonly number[],
+  ): readonly SearchMatch[] {
+    if (!query.trim()) return [];
+    const fuse = pageIndices ? this.#subset(pageIndices) : this.#fuse;
+    const matches: SearchMatch[] = [];
+    for (const result of fuse.search(query)) {
+      if ((result.score ?? 1) > maxScore) continue;
+      const indices = result.matches?.[0]?.indices ?? [];
+      if (indices.length === 0) continue;
+      let start = Number.POSITIVE_INFINITY;
+      let end = 0;
+      for (const [first, last] of indices) {
+        start = Math.min(start, first);
+        end = Math.max(end, last + 1);
+      }
+      const text = result.item.text.slice(start, end);
+      matches.push({ pageIndex: result.item.pageIndex, start, end, text });
+    }
+    return matches.sort((a, b) => a.pageIndex - b.pageIndex);
+  }
+
+  #subset(pageIndices: readonly number[]): Fuse<FuzzyPageText> {
+    const wanted = new Set(pageIndices);
+    const { keys, records } = this.#index.toJSON();
+    const kept = records.filter((record) =>
+      wanted.has(this.#pages[record.i]?.pageIndex ?? -1),
+    );
+    return new Fuse(
+      this.#pages,
+      this.#options,
+      Fuse.parseIndex<FuzzyPageText>({ keys, records: kept }),
+    );
+  }
+}
+
+/**
+ * One-off scan of a few pages, for callers without a standing index. The
+ * viewer keeps a {@link FuzzyPageIndex} per document instead.
+ */
+export function findFuzzyPageMatches(
+  pages: readonly FuzzyPageText[],
+  query: string,
+  options: ResolvedFuzzySearchOptions,
+  caseSensitive = false,
+): readonly SearchMatch[] {
+  return new FuzzyPageIndex(pages, options, caseSensitive).search(
+    query.slice(0, options.maxQueryLength),
+    options.maxScore,
+  );
 }
 
 /** Page indices of `[first, last]` ordered by distance from `nearPage`, ties earlier-first. */

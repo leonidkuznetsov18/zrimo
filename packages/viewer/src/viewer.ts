@@ -39,7 +39,10 @@ import {
   nearestMatchIndex,
   pagesNearestFirst,
   resolveFuzzySearchOptions,
+  type FuzzyPageText,
+  type ResolvedFuzzySearchOptions,
 } from "./fuzzy-search.js";
+import { FuzzyWorkerClient } from "./fuzzy-worker-client.js";
 import { enforceContainerLimits, resolveLimits } from "./limits.js";
 import type { AdapterRegistry } from "./registry.js";
 import { loadDocumentSource } from "./source.js";
@@ -86,6 +89,12 @@ export class DocumentViewer implements ViewerApi {
   #activeSearch: AbortController | undefined;
   #selection: TextSelection | CellRange | CellSelection | null = null;
   #searchResult: SearchResult | null = null;
+  /** Off-thread fuzzy matcher holding the current document's index. */
+  #fuzzyWorker: FuzzyWorkerClient | undefined;
+  /** Which pages/options the worker's index was built from; rebuilt on change. */
+  #fuzzyIndexKey: string | undefined;
+  /** Set once the worker failed to start, so the main thread takes over for good. */
+  #fuzzyWorkerUnavailable = false;
   #generation = 0;
   #searchGeneration = 0;
   #viewEventScheduled = false;
@@ -569,33 +578,49 @@ export class DocumentViewer implements ViewerApi {
         );
       }
       if (matches.length === 0 && fuzzy) {
-        // The page texts are already in memory, so the fallback is CPU only.
-        // Pages are compared nearest to the hint first, a batch at a time,
-        // and the scan stops at the first batch that holds the passage; a
-        // yield between batches keeps a long document from freezing the UI.
         // With a hint the passage sits near it, so only that neighbourhood is
         // worth the fuzzy cost; without one every page is a candidate.
         const order = pagesNearestFirst(firstPage, lastPage, nearPage).slice(
           0,
           nearPage === undefined ? undefined : fuzzy.pageWindow,
         );
-        for (
-          let offset = 0;
-          offset < order.length && matches.length === 0;
-          offset += fuzzy.pagesPerBatch
-        ) {
-          if (offset > 0) await yieldToEventLoop();
-          if (controller.signal.aborted) throw abortError();
-          const batch = order
-            .slice(offset, offset + fuzzy.pagesPerBatch)
-            .map((pageIndex) => ({
-              pageIndex,
-              text: texts.get(pageIndex) ?? "",
-            }));
-          matches.push(
-            ...findFuzzyPageMatches(batch, cleanQuery, fuzzy, caseSensitive),
-          );
-        }
+        const pattern = cleanQuery.slice(0, fuzzy.maxQueryLength);
+        const pages: FuzzyPageText[] = [];
+        for (const [pageIndex, text] of texts) pages.push({ pageIndex, text });
+        const offThread = fuzzy.worker
+          ? await this.#searchFuzzyInWorker(
+              pages,
+              pattern,
+              order,
+              fuzzy,
+              caseSensitive,
+              controller.signal,
+            )
+          : undefined;
+        if (offThread) matches.push(...offThread);
+        else
+          for (
+            let offset = 0;
+            offset < order.length && matches.length === 0;
+            offset += fuzzy.pagesPerBatch
+          ) {
+            // The page texts are already in memory, so the fallback is CPU
+            // only. Pages are compared nearest to the hint first, a batch at
+            // a time, and the scan stops at the first batch that holds the
+            // passage; a yield between batches keeps a long document from
+            // freezing the UI.
+            if (offset > 0) await yieldToEventLoop();
+            if (controller.signal.aborted) throw abortError();
+            const batch = order
+              .slice(offset, offset + fuzzy.pagesPerBatch)
+              .map((pageIndex) => ({
+                pageIndex,
+                text: texts.get(pageIndex) ?? "",
+              }));
+            matches.push(
+              ...findFuzzyPageMatches(batch, pattern, fuzzy, caseSensitive),
+            );
+          }
         if (matches.length > 0) strategy = "fuzzy";
       }
       if (generation !== this.#searchGeneration) throw abortError();
@@ -614,6 +639,69 @@ export class DocumentViewer implements ViewerApi {
     } finally {
       if (this.#activeSearch === controller) this.#activeSearch = undefined;
     }
+  }
+
+  /**
+   * Fuzzy scan in the worker. The document's pages are indexed once per
+   * (range, options) and reused by every search until the document closes;
+   * `undefined` hands the scan back to the main thread when the worker is
+   * unavailable or failed, so a missing worker asset degrades to slowness,
+   * never to a lost match.
+   */
+  async #searchFuzzyInWorker(
+    pages: readonly FuzzyPageText[],
+    pattern: string,
+    pageIndices: readonly number[],
+    fuzzy: ResolvedFuzzySearchOptions,
+    caseSensitive: boolean,
+    signal: AbortSignal,
+  ): Promise<readonly SearchMatch[] | undefined> {
+    if (this.#fuzzyWorkerUnavailable) return undefined;
+    try {
+      this.#fuzzyWorker ??= FuzzyWorkerClient.create(this.#fuzzyWorkerUrl());
+      if (!this.#fuzzyWorker) {
+        this.#fuzzyWorkerUnavailable = true;
+        return undefined;
+      }
+      const key = `${pages.map((page) => page.pageIndex).join(",")}|${fuzzy.threshold}|${fuzzy.maxPageTextLength}|${caseSensitive}`;
+      if (this.#fuzzyIndexKey !== key) {
+        this.#fuzzyIndexKey = undefined;
+        await this.#fuzzyWorker.index(pages, {
+          threshold: fuzzy.threshold,
+          maxPageTextLength: fuzzy.maxPageTextLength,
+          caseSensitive,
+        });
+        this.#fuzzyIndexKey = key;
+      }
+      const matches = await this.#fuzzyWorker.search(
+        pattern,
+        fuzzy.maxScore,
+        pageIndices,
+      );
+      if (signal.aborted) throw abortError();
+      return matches;
+    } catch (error) {
+      if (signal.aborted) throw error;
+      this.#runtime.logger?.warn?.(
+        "Fuzzy search worker unavailable; matching on the main thread",
+        { message: error instanceof Error ? error.message : String(error) },
+      );
+      this.#dropFuzzyWorker();
+      this.#fuzzyWorkerUnavailable = true;
+      return undefined;
+    }
+  }
+
+  #fuzzyWorkerUrl(): URL {
+    return this.#runtime.assetBaseUrl
+      ? new URL("workers/fuzzy-search-worker.js", this.#runtime.assetBaseUrl)
+      : new URL("./workers/fuzzy-search-worker.js", import.meta.url);
+  }
+
+  #dropFuzzyWorker(): void {
+    this.#fuzzyWorker?.terminate();
+    this.#fuzzyWorker = undefined;
+    this.#fuzzyIndexKey = undefined;
   }
 
   searchNext(): SearchResult | null {
@@ -930,6 +1018,7 @@ export class DocumentViewer implements ViewerApi {
     this.#activeSearch?.abort();
     this.#activeSearch = undefined;
     this.#searchResult = null;
+    this.#dropFuzzyWorker();
     this.#selection = null;
     this.#textMaps.clear();
     this.#textMapBytes = 0;

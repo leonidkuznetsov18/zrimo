@@ -28,14 +28,19 @@ await writeFile(resolve(dist, "styles.css"), `${viewerCss.trim()}\n`);
 await mkdir(resolve(dist, "assets"), { recursive: true });
 await mkdir(resolve(dist, "fonts"), { recursive: true });
 await mkdir(resolve(dist, "workers"), { recursive: true });
-await build({
-  entryPoints: [resolve(packageRoot, "src/csv-worker.ts")],
-  bundle: true,
-  format: "esm",
-  platform: "browser",
-  target: ["es2022"],
-  outfile: resolve(dist, "workers/csv-worker.js"),
-});
+for (const [entry, outfile] of [
+  ["src/csv-worker.ts", "workers/csv-worker.js"],
+  // Bundled so the worker realm gets Fuse.js without a bare-specifier import.
+  ["src/fuzzy-search-worker.ts", "workers/fuzzy-search-worker.js"],
+])
+  await build({
+    entryPoints: [resolve(packageRoot, entry)],
+    bundle: true,
+    format: "esm",
+    platform: "browser",
+    target: ["es2022"],
+    outfile: resolve(dist, outfile),
+  });
 await cp(
   resolve(root, ".cache/wasm-bindgen/legacy"),
   resolve(dist, "assets/legacy"),

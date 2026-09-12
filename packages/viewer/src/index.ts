@@ -6,6 +6,8 @@ export * from "./format.js";
 export * from "./limits.js";
 export * from "./interaction.js";
 export * from "./fuzzy-search.js";
+export * from "./fuzzy-worker-protocol.js";
+export * from "./fuzzy-worker-client.js";
 export * from "./search-reveal.js";
 export * from "./adapters/docx-images.js";
 export * from "./render-scheduler.js";
